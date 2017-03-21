@@ -42,7 +42,7 @@ class UniformSphereSampler:
         rotation.matrix[0, 1] = sina
         rotation.matrix[1, 1] = cosa
         ret = view.transpose()
-        ret.rotate(rotation.transpose())
+        ret.rotate(transform=rotation.transpose())
         return ret.transpose()
 
     def __iter__(self):

@@ -39,6 +39,15 @@ class PlyParser:
                     break
         return None
 
+    def get_vertex_normals(self):
+        for element in self.data.elements:
+            if element.name == "vertex":
+                try:
+                    return PlyParser.recarray_to_array(element.data[["nx", "ny", "nz"]], np.float32)
+                except ValueError:
+                    break
+        return None
+
     def get_texture_coord(self):
         for element in self.data.elements:
             if element.name == "vertex":

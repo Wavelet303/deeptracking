@@ -1,34 +1,31 @@
 """
     Opengl based rendering tool
 
+    Todo Make it easier to load multiple models **
+
     date : 2017-20-03
 """
-import glfw
 
 __author__ = "Mathieu Garon"
 __version__ = "0.0.1"
 
 from OpenGL.GL import shaders
+import glfw
 from deeptracking.data.glew import *
-# import import_export.PLYReader as ply
+from deeptracking.utils.plyparser import PlyParser
 import numpy as np
 
 
 class ModelRenderer():
     def __init__(self, model_path, shader_path, camera, window):
-        self.vertices, self.faces = ply.read(model_path)
+        self.model_3d = PlyParser(model_path)
         self.camera = camera
         self.window = window
-        # Opengl Flags
-        glEnable(GL_DEPTH_TEST)
-        glDepthMask(GL_TRUE)
-        glDepthFunc(GL_LESS)
-        glDepthRange(0.0, 1.0)
 
         self.texcoord_buffer = None
 
         self.setup_shaders(shader_path)
-        self.setup_buffers(self.vertices, self.faces)
+        self.setup_buffers(self.model_3d)
         self.setup_attributes()
         self.setup_camera()
 
@@ -43,13 +40,14 @@ class ModelRenderer():
         glLinkProgram(self.shader_program)
         glUseProgram(self.shader_program)
 
-    def setup_buffers(self, pointcloud, face_index):
+    def setup_buffers(self, plyparser):
         # ---- Setup data ----
-        color = pointcloud["RGB"].astype(np.float32) / 255.
-        vertex = pointcloud["XYZ"].astype(np.float32)
-        ambiant_occlusion = np.ones(pointcloud["XYZ"].shape, dtype=np.float32)
-        normals = pointcloud["UVW"].astype(np.float32)
+        color = plyparser.get_vertex_color().astype(np.float32) / 255.
+        vertex = plyparser.get_vertex()
+        ambiant_occlusion = np.ones(vertex.shape, dtype=np.float32)
+        normals = plyparser.get_vertex_normals()
         normals = normals / np.linalg.norm(normals, axis=1)[:, np.newaxis]
+        self.faces = plyparser.get_faces()
 
         self.vertex_buffer = glGenBuffers(1)
         glBindBuffer(GL_ARRAY_BUFFER, self.vertex_buffer)
@@ -68,7 +66,7 @@ class ModelRenderer():
         glBufferData(GL_ARRAY_BUFFER, ambiant_occlusion.nbytes, ambiant_occlusion, GL_STATIC_DRAW)
 
         try:
-            texcoord = pointcloud["ST"].astype(np.float32)
+            texcoord = plyparser.get_texture_coord()
             self.texcoord_buffer = glGenBuffers(1)
             glBindBuffer(GL_ARRAY_BUFFER, self.texcoord_buffer)
             glBufferData(GL_ARRAY_BUFFER, texcoord.nbytes, texcoord, GL_STATIC_DRAW)
@@ -77,45 +75,33 @@ class ModelRenderer():
 
         self.buffer_index = glGenBuffers(1)
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.buffer_index)
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, face_index.nbytes, face_index, GL_STATIC_DRAW)
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, self.faces.nbytes, self.faces, GL_STATIC_DRAW)
 
         # load a default texture by default else get the pointcloud's texture
         self.texture = glGenTextures(1)
         tex = np.ones((1, 1, 4), dtype=np.uint8)
         tex.fill(255)
-        if self.vertices.texture is not None:
-            tex = self.vertices.texture[::-1, :, :]
+        texture = plyparser.get_texture()
+        if texture is not None:
+            tex = texture[::-1, :, :]
         glBindTexture(GL_TEXTURE_2D, self.texture)
         glEnable(GL_TEXTURE_2D)
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tex.shape[1], tex.shape[0], 0, GL_RGB, GL_UNSIGNED_BYTE, tex)
         glGenerateMipmap(GL_TEXTURE_2D)
 
+    def setup_attrib_pointer(self, buffer, name, lenght):
+        loc = glGetAttribLocation(self.shader_program, name)
+        glEnableVertexAttribArray(loc)
+        glBindBuffer(GL_ARRAY_BUFFER, buffer)
+        glVertexAttribPointer(loc, lenght, GL_FLOAT, False, 0, ctypes.c_void_p(0))
+
     def setup_attributes(self):
-        loc = glGetAttribLocation(self.shader_program, "position")
-        glEnableVertexAttribArray(loc)
-        glBindBuffer(GL_ARRAY_BUFFER, self.vertex_buffer)
-        glVertexAttribPointer(loc, 3, GL_FLOAT, False, 0, ctypes.c_void_p(0))
-
-        loc = glGetAttribLocation(self.shader_program, "color")
-        glEnableVertexAttribArray(loc)
-        glBindBuffer(GL_ARRAY_BUFFER, self.color_buffer)
-        glVertexAttribPointer(loc, 3, GL_FLOAT, False, 0, ctypes.c_void_p(0))
-
-        loc = glGetAttribLocation(self.shader_program, "normal")
-        glEnableVertexAttribArray(loc)
-        glBindBuffer(GL_ARRAY_BUFFER, self.normal_buffer)
-        glVertexAttribPointer(loc, 3, GL_FLOAT, False, 0, ctypes.c_void_p(0))
-
-        loc = glGetAttribLocation(self.shader_program, "ambiant_occlusion")
-        glEnableVertexAttribArray(loc)
-        glBindBuffer(GL_ARRAY_BUFFER, self.ambiant_occlusion_buffer)
-        glVertexAttribPointer(loc, 3, GL_FLOAT, False, 0, ctypes.c_void_p(0))
-
+        self.setup_attrib_pointer(self.vertex_buffer, "position", 3)
+        self.setup_attrib_pointer(self.color_buffer, "color", 3)
+        self.setup_attrib_pointer(self.normal_buffer, "normal", 3)
+        self.setup_attrib_pointer(self.ambiant_occlusion_buffer, "ambiant_occlusion", 3)
         if self.texcoord_buffer:
-            loc = glGetAttribLocation(self.shader_program, "texcoords")
-            glEnableVertexAttribArray(loc)
-            glBindBuffer(GL_ARRAY_BUFFER, self.texcoord_buffer)
-            glVertexAttribPointer(loc, 2, GL_FLOAT, False, 0, ctypes.c_void_p(0))
+            self.setup_attrib_pointer(self.texcoord_buffer, "texcoords", 2)
 
         # ---- Setup Uniforms ----
         self.uniform_locations = {
@@ -139,19 +125,19 @@ class ModelRenderer():
 
     def load_ambiant_occlusion_map(self, path):
         try:
-            vertices, faces = ply.read(path)
-            ambiant_occlusion = vertices["RGB"].astype(np.float32) / 255
+            ao_model = PlyParser(path)
+            ambiant_occlusion = ao_model.get_vertex_color().astype(np.float32) / 255
             glBindBuffer(GL_ARRAY_BUFFER, self.ambiant_occlusion_buffer)
             glBufferData(GL_ARRAY_BUFFER, ambiant_occlusion.nbytes, ambiant_occlusion, GL_STATIC_DRAW)
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.buffer_index)  # bind faces buffer
         except FileNotFoundError:
-            print("ViewpointRender, ambiant occlusion file not found ... continue with basic render")
+            print("[WARNING] ViewpointRender: ambiant occlusion file not found ... continue with basic render")
 
     def setup_camera(self):
         self.near_plane = 0.1
         self.far_plane = 2
 
-        # see : http://ksimek.github.io/2013/06/03/calibrated_cameras_in_opengl/
+        # credit : http://ksimek.github.io/2013/06/03/calibrated_cameras_in_opengl/
         proj = np.array([[self.camera.focal_x, 0, -self.camera.center_x, 0],
                          [0, self.camera.focal_y, -self.camera.center_y, 0],
                          [0, 0, self.near_plane + self.far_plane, self.near_plane * self.far_plane],
@@ -256,4 +242,11 @@ def InitOpenGL(width, height, hide_window=True):
         sys.exit(-1)
     glClearColor(0, 0, 0, 0)
     window = None
+
+    # Opengl Flags
+    glEnable(GL_DEPTH_TEST)
+    glDepthMask(GL_TRUE)
+    glDepthFunc(GL_LESS)
+    glDepthRange(0.0, 1.0)
+
     return window
