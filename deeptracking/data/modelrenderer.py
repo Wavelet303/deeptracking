@@ -3,12 +3,14 @@
 
     date : 2017-20-03
 """
+import glfw
+
 __author__ = "Mathieu Garon"
 __version__ = "0.0.1"
 
 from OpenGL.GL import shaders
 from deeptracking.data.glew import *
-#import import_export.PLYReader as ply
+# import import_export.PLYReader as ply
 import numpy as np
 
 
@@ -145,7 +147,6 @@ class ModelRenderer():
         except FileNotFoundError:
             print("ViewpointRender, ambiant occlusion file not found ... continue with basic render")
 
-
     def setup_camera(self):
         self.near_plane = 0.1
         self.far_plane = 2
@@ -156,11 +157,11 @@ class ModelRenderer():
                          [0, 0, self.near_plane + self.far_plane, self.near_plane * self.far_plane],
                          [0, 0, -1, 0]])
         self.projection_matrix = ModelRenderer.perspectiveMatrix(0.0,
-                                                                   self.camera.width,
-                                                                   self.camera.height,
-                                                                   0.0,
-                                                                   self.near_plane,
-                                                                   self.far_plane).dot(proj).T
+                                                                 self.camera.width,
+                                                                 self.camera.height,
+                                                                 0.0,
+                                                                 self.near_plane,
+                                                                 self.far_plane).dot(proj).T
 
         glUniformMatrix4fv(self.uniform_locations['proj'], 1, GL_FALSE, self.projection_matrix)
 
@@ -242,7 +243,9 @@ def InitOpenGL(width, height, hide_window=True):
         sys.exit(-1)
     window = glfw.create_window(width, height, "ViewpointRender", None, None)
     if not window:
-        print("Failed to open GLFW window. If you have an Intel GPU, they are not 3.3 compatible. Try the 2.1 version of the tutorials.\n",file=sys.stderr)
+        print(
+            "Failed to open GLFW window. If you have an Intel GPU, they are not 3.3 compatible. Try the 2.1 version of the tutorials.\n",
+            file=sys.stderr)
         glfw.terminate()
         sys.exit(-1)
     glfw.make_context_current(window)
