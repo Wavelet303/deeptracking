@@ -1,5 +1,5 @@
 """
-    Transforms contain utility function to manipulate pointclouds
+    Transforms contain utility functions to manipulate pointclouds
 
     date : 2016-03-01
 """

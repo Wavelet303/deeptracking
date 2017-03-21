@@ -1,0 +1,17 @@
+ply
+format ascii 1.0
+comment made by anonymous
+comment this file is a cube
+element vertex 8
+property float32 x
+property float32 y
+property float32 z
+end_header
+0 0 0
+0 0 1
+0 1 1
+0 1 0
+1 0 0
+1 0 1
+1 1 1
+1 1 0
