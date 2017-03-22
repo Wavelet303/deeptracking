@@ -77,23 +77,6 @@ def unnormalize_label(params, max_translation, max_rotation_rad):
     return params
 
 
-def numpy_int16_to_uint8(depth):
-    x, y = depth.shape
-    out = np.ndarray((x, y, 2), dtype=np.uint8)
-    out[:, :, 0] = np.right_shift(depth, 8)
-    out[:, :, 1] = depth.astype(np.uint8)
-    return out
-
-
-def numpy_uint8_to_int16(depth8):
-    x, y, c = depth8.shape
-    out = np.ndarray((x, y), dtype=np.int16)
-    out[:, :] = depth8[:, :, 0]
-    out = np.left_shift(out, 8)
-    out[:, :] += depth8[:, :, 1]
-    return out
-
-
 def load_prior(header, prior_tensor, isQuaternion=True, inverse=False):
     viewpoint_size, pair_size, total_size = extract_viewpoint_sizes(header)
     for i in range(total_size):

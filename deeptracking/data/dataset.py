@@ -1,22 +1,64 @@
-from os import path
+import os
 import numpy as np
+import json
 
 from deeptracking.utils.camera import Camera
-
+from deeptracking.data.frame import Frame
 
 class Dataset:
-    def __init__(self, folder_path, normalize=True, normalize_param_folder=""):
+    def __init__(self, folder_path, frame_class=Frame, normalize=True, normalize_param_folder=""):
         self.path = folder_path
-        self.header = Dataset.load_viewpoint_header(self.path)
-        self.camera = Camera.load_from_json(self.path)
-        self.viewpoint_size, self.pair_size, self.total_size = Dataset.extract_viewpoint_sizes(self.header)
-        self.normalize = normalize
-        if self.normalize:
-            try:
-                self.mean = np.load(path.join(normalize_param_folder, "mean.npy"))
-                self.std = np.load(path.join(normalize_param_folder, "std.npy"))
-            except Exception:
-                raise IOError("Folder {} does not contain mean.npy and std.npy".format(normalize_param_folder))
+        self.data_pose = []
+        self.data_pair = {}
+        self.metadata = {}
+        self.frame_class = frame_class
+        #self.header = Dataset.load_viewpoint_header(self.path)
+        #self.camera = Camera.load_from_json(self.path)
+        #self.viewpoint_size, self.pair_size, self.total_size = Dataset.extract_viewpoint_sizes(self.header)
+        #self.normalize = normalize
+        #if self.normalize:
+        #    try:
+        #        self.mean = np.load(os.path.join(normalize_param_folder, "mean.npy"))
+        #        self.std = np.load(os.path.join(normalize_param_folder, "std.npy"))
+        #    except Exception:
+        #        raise IOError("Folder {} does not contain mean.npy and std.npy".format(normalize_param_folder))
+
+    def add_pose(self, rgb, depth, pose):
+        index = self.size()
+        frame = self.frame_class(rgb, depth, str(index))
+        self.data_pose.append((frame, pose))
+        return index
+
+    def pair_size(self, id):
+        if id not in self.data_pair:
+            return 0
+        else:
+            return len(self.data_pair[id])
+
+    def add_pair(self, rgb, depth, pose, id):
+        if id >= len(self.data_pose):
+            raise IndexError("impossible to add pair if pose does not exists")
+        if id in self.data_pair:
+            frame = self.frame_class(rgb, depth, "{}n{}".format(id, len(self.data_pair[id]) - 1))
+            self.data_pair[id].append((frame, pose))
+        else:
+            frame = self.frame_class(rgb, depth, "{}n0".format(id))
+            self.data_pair[id] = [(frame, pose)]
+
+    def dump_on_disk(self):
+        viewpoints_data = {}
+        for frame, pose in self.data_pose:
+            frame.dump(self.path)
+            self.insert_pose_in_dict(viewpoints_data, frame.id, pose)
+        with open(os.path.join(self.path, "viewpoints.json"), 'w') as outfile:
+            json.dump(dict, outfile)
+
+    @staticmethod
+    def insert_pose_in_dict(dict, key, item):
+        params = {}
+        for i, param in enumerate(item.to_parameters()):
+            params[str(i)] = str(param)
+        dict[key] = {"vector": params}
 
     def get_labels(self):
         return
@@ -28,7 +70,7 @@ class Dataset:
         return
 
     def size(self):
-        return self.total_size
+        return len(self.data_pose)
 
     def get_pair_index(self, dataset_index):
         return dataset_index % self.pair_size
