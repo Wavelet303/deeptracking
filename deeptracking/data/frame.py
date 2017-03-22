@@ -13,34 +13,36 @@ class Frame:
     def is_on_disk(self):
         return self.rgb is None and self.depth is None
 
+    def clear_image(self):
+        self.rgb = None
+        self.depth = None
+
     def dump(self, path):
         if not self.is_on_disk():
             numpngw.write_png(os.path.join(path, '{}.png').format(self.id), self.rgb)
             numpngw.write_png(os.path.join(path, '{}d.png').format(self.id), self.depth.astype(np.uint16))
-            self.rgb = None
-            self.depth = None
+            self.clear_image()
 
     def load(self, path):
         self.rgb = np.array(Image.open(os.path.join(path, self.id + ".png")))
         self.depth = np.array(Image.open(os.path.join(path, self.id + "d.png"))).astype(np.uint16)
 
 
-class FrameNumpy:
+class FrameNumpy(Frame):
     def __init__(self, rgb, depth, id):
-        depth8 = self.numpy_int16_to_uint8(depth)
-        self.frame = np.concatenate((rgb, depth8), axis=2)
-        self.id = id
-
-    def is_on_disk(self):
-        return self.frame is None
+        super().__init__(rgb, depth, id)
 
     def dump(self, path):
         if not self.is_on_disk():
-            np.save(os.path.join(path, self.id), self.frame)
-            self.frame = None
+            depth8 = self.numpy_int16_to_uint8(self.depth)
+            frame = np.concatenate((self.rgb, depth8), axis=2)
+            np.save(os.path.join(path, self.id), frame)
+            self.clear_image()
 
     def load(self, path):
-        self.frame = np.load(os.path.join(path, self.id))
+        frame = np.load(os.path.join(path, self.id))
+        self.depth = self.numpy_uint8_to_int16(frame[:, :, 3:])
+        self.rgb = frame[:, :, 0:3]
 
     @staticmethod
     def numpy_int16_to_uint8(depth):
