@@ -29,8 +29,6 @@ if __name__ == '__main__':
     SHADER_PATH = data["shader_path"]
     OUTPUT_PATH = data["output_path"]
     SAMPLE_QUANTITY = int(data["sample_quantity"])
-    RANDOM_LIGHT_DIRECTION = data["random_light_direction"] == "True"
-    RANDOM_LIGHT_POWER = data["random_light_power"] == "True"
     TRANSLATION_RANGE = float(data["translation_range"])
     ROTATION_RANGE = math.radians(float(data["rotation_range"]))
     SPHERE_MIN_RADIUS = float(data["sphere_min_radius"])

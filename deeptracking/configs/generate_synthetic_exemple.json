@@ -10,19 +10,20 @@
     }
   ],
 
-  "camera_path": "tests/data/camera.json",
+  "camera_path": "deeptracking/data/sensors/camera_parameter_files/Kinect2_lab.json",
   "shader_path": "deeptracking/data/shaders",
   "output_path": "synthetic_dataset_test",
-
   "sample_quantity": "10",
+  "image_size": "150",
 
-  "random_light_direction": "True",
-  "random_light_power": "False",
+  "COMMENT_1" : "Real data section",
+  "detector_layout_path": "deeptracking/detector/aruco_layout.xml",
+
+  "COMMENT_2" : "Synthetic data section",
   "translation_range": "0.02",
   "rotation_range": "10",
   "sphere_min_radius": "0.4",
-  "sphere_max_radius": "1.5",
-  "image_size": "150"
+  "sphere_max_radius": "1.5"
 }
 
 
