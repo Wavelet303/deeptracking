@@ -1,0 +1,28 @@
+{
+
+  "models": [
+
+    {
+      "name": "test",
+      "model_path": "tests/data/test.ply",
+      "ambiant_occlusion_model": "tests/data/test_ao.ply",
+      "object_width": "250"
+    }
+  ],
+
+  "camera_path": "tests/data/camera.json",
+  "shader_path": "deeptracking/data/shaders",
+  "output_path": "synthetic_dataset_test",
+
+  "sample_quantity": "50",
+
+  "random_light_direction": "True",
+  "random_light_power": "False",
+  "translation_range": "0.02",
+  "rotation_range": "10",
+  "sphere_min_radius": "0.4",
+  "sphere_max_radius": "1.5",
+  "image_size": "150"
+}
+
+
