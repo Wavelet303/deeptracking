@@ -5,12 +5,14 @@ import json
 from deeptracking.utils.camera import Camera
 from deeptracking.data.frame import Frame
 
+
 class Dataset:
     def __init__(self, folder_path, frame_class=Frame, normalize=True, normalize_param_folder=""):
         self.path = folder_path
         self.data_pose = []
         self.data_pair = {}
         self.metadata = {}
+        self.camera = None
         self.frame_class = frame_class
         #self.header = Dataset.load_viewpoint_header(self.path)
         #self.camera = Camera.load_from_json(self.path)
@@ -45,13 +47,24 @@ class Dataset:
             frame = self.frame_class(rgb, depth, "{}n0".format(id))
             self.data_pair[id] = [(frame, pose)]
 
-    def dump_on_disk(self):
+    def dump_on_disk(self, metadata={}):
+        """
+        Unload all images data from ram and save them to the dataset's path ( can be reloaded with load_from_disk())
+        :return:
+        """
         viewpoints_data = {}
         for frame, pose in self.data_pose:
+            string_id = int(frame.id)
+            if string_id in self.data_pair:
+                for pair_frame, pair_pose in self.data_pair[string_id]:
+                    pair_frame.dump(self.path)
+                    self.insert_pose_in_dict(viewpoints_data, pair_frame.id, pair_pose)
             frame.dump(self.path)
             self.insert_pose_in_dict(viewpoints_data, frame.id, pose)
+        viewpoints_data["metaData"] = metadata
         with open(os.path.join(self.path, "viewpoints.json"), 'w') as outfile:
-            json.dump(dict, outfile)
+            json.dump(viewpoints_data, outfile)
+        self.camera.save(self.path)
 
     @staticmethod
     def insert_pose_in_dict(dict, key, item):
