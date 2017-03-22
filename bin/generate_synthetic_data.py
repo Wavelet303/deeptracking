@@ -3,6 +3,7 @@ from deeptracking.utils.camera import Camera
 from deeptracking.utils.transform import Transform
 from deeptracking.data.dataset_utils import combine_view_transform
 from deeptracking.data.modelrenderer import ModelRenderer, InitOpenGL
+from deeptracking.data.dataset_utils import normalize_scale
 from deeptracking.utils.uniform_sphere_sampler import UniformSphereSampler
 import sys
 import json
@@ -41,7 +42,7 @@ if __name__ == '__main__':
     for model in MODELS:
         vpRender = ModelRenderer(model["model_path"], SHADER_PATH, camera, window)
         vpRender.load_ambiant_occlusion_map(model["ambiant_occlusion_model"])
-        object_width = int(model["object_width"])
+        OBJECT_WIDTH = int(model["object_width"])
         count = 0
         for sample in sampler:
             random_transform = Transform.random((-TRANSLATION_RANGE, TRANSLATION_RANGE),
@@ -50,6 +51,9 @@ if __name__ == '__main__':
 
             rgbA, depthA = vpRender.render(sample.transpose())
             rgbB, depthB = vpRender.render(sample.transpose(), sampler.random_direction())
+
+            rgbA, depthA = normalize_scale(rgbA, depthA, sample.inverse(), vpRender.camera, IMAGE_SIZE, OBJECT_WIDTH)
+            rgbB, depthB = normalize_scale(rgbB, depthB, sample.inverse(), vpRender.camera, IMAGE_SIZE, OBJECT_WIDTH)
 
             import cv2
             cv2.imshow("testA", rgbA[:, :, ::-1])
