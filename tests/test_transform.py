@@ -88,3 +88,15 @@ class TestTransformMethods(unittest.TestCase):
                           [0.0471, 0.7908, -0.6103, 0.],
                           [0., 0., 0., 1.]])
         np.testing.assert_almost_equal(transform.matrix, truth, 4)
+
+    def test_two_identity_should_be_equal(self):
+        transform1 = Transform()
+        transform2 = Transform()
+        self.assertEqual(transform1, transform2)
+        transform3 = Transform.from_parameters(1, 0, 0, 0, 0, 0)
+        self.assertNotEqual(transform1, transform3)
+
+    def test_two_similar_transform_should_be_equal(self):
+        transform1 = Transform.from_parameters(1.1, 1.2, 1.3, 1.1, 1.2, 1.3)
+        transform2 = Transform.from_parameters(1.10001, 1.2, 1.30001, 1.1, 1.200001, 1.3)
+        self.assertEqual(transform1, transform2)

@@ -88,7 +88,7 @@ if __name__ == '__main__':
     rgbd_record = False
     save_next_rgbd_pose = False
     if PRELOAD:
-        dataset.load_header()
+        dataset.load()
 
     while True:
         bgr, depth = sensor.get_frame()
@@ -156,11 +156,14 @@ if __name__ == '__main__':
             detection_offset.rotate(y=math.radians(1))
     print("Compute detections")
     for i in range(dataset.size()):
-        rgb, depth = dataset.data_pose[i][0].get_rgb_depth(dataset.path)
-        pose = detector.detect(rgb)
-        if detector.get_likelihood() < 0.1:
-            print("[WARNING] : Detector returns uncertain pose at frame {}".format(i))
-        #Todo : need better way to handle viewpoint's pose change in dataset...
-        dataset.data_pose[i] = (Frame(rgb, depth, str(i)), pose)
+        frame, pose = dataset.data_pose[i]
+        # if pose is identity, compute the detection
+        if pose == Transform():
+            rgb, depth = dataset.data_pose[i][0].get_rgb_depth(dataset.path)
+            pose = detector.detect(rgb)
+            if detector.get_likelihood() < 0.1:
+                print("[WARNING] : Detector returns uncertain pose at frame {}".format(i))
+            #Todo : need better way to handle viewpoint's pose change in dataset...
+            dataset.data_pose[i] = (Frame(rgb, depth, str(i)), pose)
     dataset.dump_on_disk()
     sensor.stop()

@@ -15,7 +15,6 @@ class Dataset:
         self.metadata = {}
         self.camera = None
         self.frame_class = frame_class
-        #self.camera = Camera.load_from_json(self.path)
         #self.normalize = normalize
         #if self.normalize:
         #    try:
@@ -67,15 +66,17 @@ class Dataset:
             json.dump(viewpoints_data, outfile)
         self.camera.save(self.path)
 
-    def load_header(self):
+    def load(self):
         """
         Load a viewpoints.json to dataset's structure
         Todo: datastructure should be more similar to json structure...
         :return:
         """
         try:
+            # Load viewpoints file and camera file
             with open(os.path.join(self.path, "viewpoints.json")) as data_file:
                 data = json.load(data_file)
+            self.camera = Camera.load_from_json(self.path)
         except FileNotFoundError:
             return
         count = 0

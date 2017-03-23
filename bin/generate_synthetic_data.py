@@ -11,7 +11,6 @@ import sys
 import json
 import os
 import math
-import numpy as np
 
 
 if __name__ == '__main__':
@@ -45,7 +44,7 @@ if __name__ == '__main__':
     window = InitOpenGL(camera.width, camera.height)
     sphere_sampler = UniformSphereSampler(SPHERE_MIN_RADIUS, SPHERE_MAX_RADIUS)
     if PRELOAD:
-        dataset.load_header()
+        dataset.load()
     # Iterate over all models from config files
     for model in MODELS:
         vpRender = ModelRenderer(model["model_path"], SHADER_PATH, dataset.camera, window)

@@ -188,3 +188,12 @@ class Transform:
 
     def __repr__(self):
         return str(self.matrix)
+
+    def __eq__(self, other):
+        """Override the default Equals behavior"""
+        if isinstance(other, self.__class__):
+            return np.isclose(self.matrix, other.matrix).all()
+        return False
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
