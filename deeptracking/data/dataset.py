@@ -2,6 +2,7 @@ import os
 import numpy as np
 import json
 
+from deeptracking.utils.transform import Transform
 from deeptracking.utils.camera import Camera
 from deeptracking.data.frame import Frame
 
@@ -54,17 +55,46 @@ class Dataset:
         """
         viewpoints_data = {}
         for frame, pose in self.data_pose:
-            string_id = int(frame.id)
-            if string_id in self.data_pair:
-                for pair_frame, pair_pose in self.data_pair[string_id]:
-                    pair_frame.dump(self.path)
-                    self.insert_pose_in_dict(viewpoints_data, pair_frame.id, pair_pose)
-            frame.dump(self.path)
             self.insert_pose_in_dict(viewpoints_data, frame.id, pose)
+            if int(frame.id) in self.data_pair:
+                viewpoints_data[frame.id]["pairs"] = len(self.data_pair[int(frame.id)])
+                for pair_frame, pair_pose in self.data_pair[int(frame.id)]:
+                    self.insert_pose_in_dict(viewpoints_data, pair_frame.id, pair_pose)
+                    pair_frame.dump(self.path)
+            else:
+                viewpoints_data[frame.id]["pairs"] = 0
+            frame.dump(self.path)
         viewpoints_data["metaData"] = metadata
         with open(os.path.join(self.path, "viewpoints.json"), 'w') as outfile:
             json.dump(viewpoints_data, outfile)
         self.camera.save(self.path)
+
+    def load_header(self):
+        """
+        Load a viewpoints.json to dataset's structure
+        Todo: datastructure should be more similar to json structure...
+        :return:
+        """
+        try:
+            with open(os.path.join(self.path, "viewpoints.json")) as data_file:
+                data = json.load(data_file)
+        except FileNotFoundError:
+            return
+        count = 0
+        while True:
+            try:
+                id = str(count)
+                print(*[float(data[id]["vector"][str(x)]) for x in range(6)])
+                pose = Transform.from_parameters(*[float(data[id]["vector"][str(x)]) for x in range(6)])
+                self.data_pose.append((Frame(None, None, id), pose))
+                for i in range(int(data[id]["pairs"])):
+                    pair_id = "{}n{}".format(id, pair_id)
+                    self.data_pair[pair_id] = data[pair_id]
+                count += 1
+
+            except KeyError:
+                return
+
 
     @staticmethod
     def insert_pose_in_dict(dict, key, item):

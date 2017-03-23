@@ -24,13 +24,6 @@ def noise_image(img, gaussian_std=6, sp_proba=0.01, sp_strenght=50):
     return ((gaussian_noise + img) * mask).astype(type)
 
 
-def load_viewpoint_header(filepath):
-    with open(os.path.join(filepath, "viewpoints.json")) as data_file:
-        data = json.load(data_file)
-    data["path"] = filepath
-    return data
-
-
 def load_pose(header, id):
     return Transform.from_parameters(float(header[id]["vector"]["0"]),
                                      float(header[id]["vector"]["1"]),
@@ -227,3 +220,18 @@ def center_pixel(pose, camera):
     obj_z = pose.matrix[2, 3] * 1000
     point = [obj_x, -obj_y, -obj_z]
     return camera.project_points(np.array([point])).astype(np.uint32)
+
+
+def image_blend(foreground, background):
+    """
+    Uses pixel 0 to compute blending mask
+    :param foreground:
+    :param background:
+    :return:
+    """
+    if len(foreground.shape) == 2:
+        mask = foreground[:, :] == 0
+    else:
+        mask = foreground[:, :, 0] == 0
+        mask = mask[:, :, np.newaxis]
+    return background * mask + foreground
