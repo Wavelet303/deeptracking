@@ -1,3 +1,12 @@
+"""
+    Keeps a reference to a rgb and depth images (given an id). keeps data on disk or ram depending on need
+
+    date : 2017-23-03
+"""
+
+__author__ = "Mathieu Garon"
+__version__ = "0.0.1"
+
 import numpngw
 import os
 import numpy as np
@@ -12,6 +21,21 @@ class Frame:
 
     def is_on_disk(self):
         return self.rgb is None and self.depth is None
+
+    def get_rgb_depth(self, path, keep_in_ram=False):
+        """
+        getter to images, if keep in ram is false, the reference wont be kept by this object
+        :param path:
+        :param keep_in_ram:
+        :return:
+        """
+        if self.is_on_disk():
+            self.load(path)
+        rgb = self.rgb
+        depth = self.depth
+        if not keep_in_ram:
+            self.clear_image()
+        return rgb, depth
 
     def clear_image(self):
         self.rgb = None

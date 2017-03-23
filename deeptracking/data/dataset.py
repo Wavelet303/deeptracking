@@ -15,9 +15,7 @@ class Dataset:
         self.metadata = {}
         self.camera = None
         self.frame_class = frame_class
-        #self.header = Dataset.load_viewpoint_header(self.path)
         #self.camera = Camera.load_from_json(self.path)
-        #self.viewpoint_size, self.pair_size, self.total_size = Dataset.extract_viewpoint_sizes(self.header)
         #self.normalize = normalize
         #if self.normalize:
         #    try:
@@ -84,17 +82,15 @@ class Dataset:
         while True:
             try:
                 id = str(count)
-                print(*[float(data[id]["vector"][str(x)]) for x in range(6)])
                 pose = Transform.from_parameters(*[float(data[id]["vector"][str(x)]) for x in range(6)])
                 self.data_pose.append((Frame(None, None, id), pose))
                 for i in range(int(data[id]["pairs"])):
-                    pair_id = "{}n{}".format(id, pair_id)
+                    pair_id = "{}n{}".format(id, i)
                     self.data_pair[pair_id] = data[pair_id]
                 count += 1
 
             except KeyError:
                 return
-
 
     @staticmethod
     def insert_pose_in_dict(dict, key, item):

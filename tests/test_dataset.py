@@ -1,3 +1,6 @@
+__author__ = "Mathieu Garon"
+__version__ = "0.0.1"
+
 import unittest
 
 import numpy as np
@@ -18,7 +21,6 @@ class TestDatasetMethods(unittest.TestCase):
         self.populated_dataset = Dataset("data")
         for i in range(10):
             self.populated_dataset.add_pose(self.dummy_rgb, self.dummy_depth, self.dummy_pose)
-
 
     def tearDown(self):
         pass
@@ -49,6 +51,7 @@ class TestDatasetMethods(unittest.TestCase):
         self.assertEqual(self.populated_dataset.pair_size(1), 2)
 
     def test_it_should_raise_indexerror_if_pose_id_does_not_exists(self):
-        self.assertRaises(IndexError, self.populated_dataset.add_pair, self.dummy_rgb, self.dummy_depth, self.dummy_pose, 20)
-        self.assertRaises(IndexError, self.populated_dataset.add_pair, self.dummy_rgb, self.dummy_depth, self.dummy_pose, 10)
-
+        self.assertRaises(IndexError, self.populated_dataset.add_pair, self.dummy_rgb, self.dummy_depth,
+                          self.dummy_pose, 20)
+        self.assertRaises(IndexError, self.populated_dataset.add_pair, self.dummy_rgb, self.dummy_depth,
+                          self.dummy_pose, 10)

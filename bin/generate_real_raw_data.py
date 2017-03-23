@@ -154,5 +154,13 @@ if __name__ == '__main__':
             detection_offset.rotate(y=math.radians(-1))
         elif key == ARROW_RIGHT_KEY:
             detection_offset.rotate(y=math.radians(1))
+    print("Compute detections")
+    for i in range(dataset.size()):
+        rgb, depth = dataset.data_pose[i][0].get_rgb_depth(dataset.path)
+        pose = detector.detect(rgb)
+        if detector.get_likelihood() < 0.1:
+            print("[WARNING] : Detector returns uncertain pose at frame {}".format(i))
+        #Todo : need better way to handle viewpoint's pose change in dataset...
+        dataset.data_pose[i] = (Frame(rgb, depth, str(i)), pose)
     dataset.dump_on_disk()
     sensor.stop()

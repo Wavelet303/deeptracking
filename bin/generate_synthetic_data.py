@@ -34,6 +34,7 @@ if __name__ == '__main__':
     SPHERE_MIN_RADIUS = float(data["sphere_min_radius"])
     SPHERE_MAX_RADIUS = float(data["sphere_max_radius"])
     IMAGE_SIZE = (int(data["image_size"]), int(data["image_size"]))
+    PRELOAD = data["preload"] == "True"
 
     if not os.path.exists(OUTPUT_PATH):
         os.mkdir(OUTPUT_PATH)
@@ -43,6 +44,8 @@ if __name__ == '__main__':
     dataset.camera = camera
     window = InitOpenGL(camera.width, camera.height)
     sphere_sampler = UniformSphereSampler(SPHERE_MIN_RADIUS, SPHERE_MAX_RADIUS)
+    if PRELOAD:
+        dataset.load_header()
     # Iterate over all models from config files
     for model in MODELS:
         vpRender = ModelRenderer(model["model_path"], SHADER_PATH, dataset.camera, window)
