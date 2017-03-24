@@ -8,14 +8,15 @@ from deeptracking.data.frame import Frame
 
 
 class Dataset:
-    def __init__(self, folder_path, frame_class=Frame, normalize=True, normalize_param_folder=""):
+    def __init__(self, folder_path, frame_class=Frame, normalize_param_folder=""):
         self.path = folder_path
         self.data_pose = []
         self.data_pair = {}
         self.metadata = {}
         self.camera = None
         self.frame_class = frame_class
-        #self.normalize = normalize
+        self.mean = None
+        self.std = None
         #if self.normalize:
         #    try:
         #        self.mean = np.load(os.path.join(normalize_param_folder, "mean.npy"))
@@ -78,20 +79,21 @@ class Dataset:
                 data = json.load(data_file)
             self.camera = Camera.load_from_json(self.path)
         except FileNotFoundError:
-            return
+            return -1
         count = 0
         while True:
             try:
                 id = str(count)
                 pose = Transform.from_parameters(*[float(data[id]["vector"][str(x)]) for x in range(6)])
                 self.data_pose.append((Frame(None, None, id), pose))
-                for i in range(int(data[id]["pairs"])):
-                    pair_id = "{}n{}".format(id, i)
-                    self.data_pair[pair_id] = data[pair_id]
+                if "pairs" in data[id]:
+                    for i in range(int(data[id]["pairs"])):
+                        pair_id = "{}n{}".format(id, i)
+                        self.data_pair[pair_id] = data[pair_id]
                 count += 1
 
             except KeyError:
-                return
+                return 1
 
     @staticmethod
     def insert_pose_in_dict(dict, key, item):
@@ -137,20 +139,6 @@ class Dataset:
 
     def get_valid_index(self):
         return [x for x in range(self.size())]
-
-    def normalize_image(self, rgb, depth, type):
-        rgb = rgb.T
-        depth = depth.T
-        if self.normalize:
-            rgb, depth = Dataset.normalize_image_(rgb, depth, type, self.mean, self.std)
-        return rgb, depth
-
-    def extract_image_size(self):
-        try:  # compatibility with older versions
-            size = int(self.header["metaData"]["image_size"])
-        except KeyError:
-            size = 100
-        return size
 
     def unnormalize_image(self, rgb, depth, type):
         if type == 'viewpoint':

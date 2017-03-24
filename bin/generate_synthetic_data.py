@@ -2,7 +2,6 @@ from deeptracking.utils.argumentparser import ArgumentParser
 from deeptracking.utils.camera import Camera
 from deeptracking.utils.transform import Transform
 from deeptracking.data.dataset import Dataset
-from deeptracking.data.frame import Frame, FrameNumpy
 from deeptracking.data.dataset_utils import combine_view_transform
 from deeptracking.data.modelrenderer import ModelRenderer, InitOpenGL
 from deeptracking.data.dataset_utils import normalize_scale

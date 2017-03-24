@@ -117,22 +117,6 @@ def combine_view_transform(vp, view_transform):
     return rand_T
 
 
-def normalize_image_(rgb, depth, type, mean, std):
-    if type == 'viewpoint':
-        mean = mean[:4]
-        std = std[:4]
-    else:
-        mean = mean[4:]
-        std = std[4:]
-    rgb = rgb.astype(np.float32)
-    rgb -= mean[:3, np.newaxis, np.newaxis]
-    rgb /= std[:3, np.newaxis, np.newaxis]
-    depth = depth.astype(np.float32)
-    depth -= mean[3, np.newaxis, np.newaxis]
-    depth /= std[3, np.newaxis, np.newaxis]
-    return rgb, depth
-
-
 def normalize_scale(color, depth, pose, camera, output_size=(100, 100), scale_size=230):
     pose = pose.inverse()
     pixels = rect_from_pose(pose, camera, scale_size)
@@ -235,3 +219,23 @@ def image_blend(foreground, background):
         mask = foreground[:, :, 0] == 0
         mask = mask[:, :, np.newaxis]
     return background * mask + foreground
+
+
+def normalize_image(rgb, depth, mean, std):
+    """
+    Normalize image by negating mean and dividing by std (precomputed)
+    :param self:
+    :param rgb:
+    :param depth:
+    :param type:
+    :return:
+    """
+    rgb = rgb.T
+    depth = depth.T
+    rgb = rgb.astype(np.float32)
+    rgb -= mean[:3, np.newaxis, np.newaxis]
+    rgb /= std[:3, np.newaxis, np.newaxis]
+    depth = depth.astype(np.float32)
+    depth -= mean[3, np.newaxis, np.newaxis]
+    depth /= std[3, np.newaxis, np.newaxis]
+    return rgb, depth
