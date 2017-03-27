@@ -9,3 +9,11 @@ class TrackerBase:
     @abc.abstractmethod
     def get_debug_screen(self, previous_frame):
         pass
+
+    @abc.abstractmethod
+    def load(self, path):
+        pass
+
+    @abc.abstractmethod
+    def print(self):
+        pass

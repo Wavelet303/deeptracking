@@ -85,11 +85,12 @@ class Dataset:
             try:
                 id = str(count)
                 pose = Transform.from_parameters(*[float(data[id]["vector"][str(x)]) for x in range(6)])
-                self.data_pose.append((Frame(None, None, id), pose))
+                self.add_pose(None, None, pose)
                 if "pairs" in data[id]:
                     for i in range(int(data[id]["pairs"])):
                         pair_id = "{}n{}".format(id, i)
-                        self.data_pair[pair_id] = data[pair_id]
+                        pose = Transform.from_parameters(*[float(data[pair_id]["vector"][str(x)]) for x in range(6)])
+                        self.add_pair(None, None, pose, count)
                 count += 1
 
             except KeyError:
@@ -102,43 +103,15 @@ class Dataset:
             params[str(i)] = str(param)
         dict[key] = {"vector": params}
 
-    def get_labels(self):
-        return
-
-    def get_priors(self):
-        return
-
-    def load_input(self, dataset_index, tensor, tensor_index):
-        return
-
     def size(self):
         return len(self.data_pose)
-
-    def get_pair_index(self, dataset_index):
-        return dataset_index % self.pair_size
-
-    def get_origin_index(self, dataset_index):
-        if self.pair_size:
-            out = dataset_index / self.pair_size
-        else:
-            out = dataset_index
-        return int(out)
-
-    def extract_viewpoint_poses(self):
-        viewpoint_size = int(self.header["metaData"]["frameQty"])
-        viewpoint_sphere_pose = []
-        for i in range(viewpoint_size):
-            id = str(i)
-            pose = Dataset.load_pose(self.header, id).inverse()
-            viewpoint_sphere_pose.append(pose.to_parameters(isQuaternion=False)[:3])
-        return viewpoint_sphere_pose
 
     def get_permutations(self, minibatch_size):
         permutations = np.random.permutation(self.get_valid_index())
         return [permutations[x:x + minibatch_size] for x in range(0, len(permutations), minibatch_size)]
 
     def get_valid_index(self):
-        return [x for x in range(self.size())]
+        return np.arange(0, self.size())
 
     def unnormalize_image(self, rgb, depth, type):
         if type == 'viewpoint':
@@ -155,3 +128,27 @@ class Dataset:
         depth += mean[3, np.newaxis, np.newaxis]
         depth = depth.astype(np.uint16)
         return rgb.T, depth.T
+
+    def get_image_pair(self, index):
+        frame, pose = self.data_pose[index]
+        frame_pair, pose_pair = self.data_pair[index][0]
+        rgb, depth = frame.get_rgb_depth(self.path)
+        rgb_pair, depth_pair = frame_pair.get_rgb_depth(self.path)
+        return rgb, depth, pose, rgb_pair, depth_pair
+
+    def load_image(self, index):
+        frame, pose = self.data_pose[index]
+        rgb, depth = frame.get_rgb_depth(self.path)
+        return rgb, depth, pose
+
+    def load_pair(self, index, pair_id):
+        frame, pose = self.data_pair[index][pair_id]
+        rgb, depth = frame.get_rgb_depth(self.path)
+        return rgb, depth, pose
+
+    def get_sample(self, index):
+        rgbA, depthA, poseA = self.load_image(index)
+        rgbB, depthB, poseB = self.load_pair(index, 0)
+        # augment data
+        # normalize data
+        # return tensors (input, prior, label)

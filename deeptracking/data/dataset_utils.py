@@ -141,9 +141,6 @@ def normalize_scale(color, depth, pose, camera, output_size=(100, 100), scale_si
     depth = np.pad(depth, ((lower_y, higher_y), (lower_x, higher_x)), mode="constant", constant_values=0)
     color_crop = color[pixels[0, 0]:pixels[1, 0], pixels[0, 1]:pixels[2, 1], :]
     depth_crop = depth[pixels[0, 0]:pixels[1, 0], pixels[0, 1]:pixels[2, 1]].astype(np.float)
-    zero_mask = depth_crop == 0
-    depth_crop += pose.matrix[2, 3] * 1000
-    depth_crop[zero_mask] = 0
     mask_depth = imresize(depth_crop, output_size, interp='nearest', mode="F") != 0
     mask_rgb = imresize(color_crop, output_size, interp='nearest') != 0
     resized_color_crop = imresize(color_crop, output_size, interp='bilinear')
@@ -175,9 +172,6 @@ def cv_normalize_scale(color, depth, pose, camera, output_size=(100, 100), scale
     depth = np.pad(depth, ((lower_y, higher_y), (lower_x, higher_x)), mode="constant", constant_values=0)
     color_crop = color[pixels[0, 0]:pixels[1, 0], pixels[0, 1]:pixels[2, 1], :]
     depth_crop = depth[pixels[0, 0]:pixels[1, 0], pixels[0, 1]:pixels[2, 1]].astype(np.float)
-    zero_mask = depth_crop == 0
-    depth_crop += pose.matrix[2, 3] * 1000
-    depth_crop[zero_mask] = 0
     mask_depth = cv2.resize(depth_crop, output_size, interpolation=cv2.INTER_NEAREST) != 0
     mask_rgb = cv2.resize(color_crop, output_size, interpolation=cv2.INTER_NEAREST) != 0
     resized_depth_crop = cv2.resize(depth_crop, output_size, interpolation=cv2.INTER_LINEAR)
@@ -221,7 +215,7 @@ def image_blend(foreground, background):
     return background * mask + foreground
 
 
-def normalize_image(rgb, depth, mean, std):
+def normalize_channels(rgb, depth, mean, std):
     """
     Normalize image by negating mean and dividing by std (precomputed)
     :param self:
@@ -239,3 +233,10 @@ def normalize_image(rgb, depth, mean, std):
     depth -= mean[3, np.newaxis, np.newaxis]
     depth /= std[3, np.newaxis, np.newaxis]
     return rgb, depth
+
+
+def normalize_depth(depth, pose):
+    zero_mask = depth == 0
+    depth += pose.matrix[2, 3] * 1000
+    depth[zero_mask] = 0
+    return depth

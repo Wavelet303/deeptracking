@@ -12,8 +12,8 @@
 
   "camera_path": "/home/mathieu/Dataset/DeepTrack/Sequence/skull/seq_1",
   "shader_path": "deeptracking/data/shaders",
-  "output_path": "/home/mathieu/Dataset/DeepTrack/Sequence/skull/seq_1",
-  "preload": "True",
+  "output_path": "synthetic_dataset_test",
+  "preload": "False",
   "sample_quantity": "10",
   "image_size": "150",
 

@@ -70,6 +70,9 @@ if __name__ == '__main__':
                 import cv2
                 cv2.imshow("testA", rgbA[:, :, ::-1])
                 cv2.imshow("testB", rgbB[:, :, ::-1])
+                #import matplotlib.pyplot as plt
+                #plt.imshow(depthA)
+                #plt.show()
                 cv2.waitKey()
 
     # Write important misc data to file

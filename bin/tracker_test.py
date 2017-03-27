@@ -50,13 +50,14 @@ if __name__ == '__main__':
         frame_generator = gen(video_data.data_pose)
         camera = video_data.camera
 
-    tracker = DeepTracker(MODEL_PATH,
+    tracker = DeepTracker(camera,
+                          MEAN_STD_PATH,
+                          OBJECT_WIDTH,
                           MODEL_3D_PATH,
                           MODEL_3D_AO_PATH,
-                          SHADER_PATH,
-                          camera,
-                          MEAN_STD_PATH,
-                          OBJECT_WIDTH)
+                          SHADER_PATH)
+    tracker.load(MODEL_PATH)
+    tracker.print()
 
     previous_frame, previous_pose = next(frame_generator)
     previous_rgb, previous_depth = previous_frame.get_rgb_depth(frame_download_path)
