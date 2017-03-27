@@ -1,7 +1,7 @@
 from deeptracking.data.sensors.sensorbase import SensorBase
 from deeptracking.utils.camera import Camera
 import pyfreenect2
-
+import cv2
 
 class Kinect2(SensorBase):
     def __init__(self, camera_path):
@@ -38,11 +38,11 @@ class Kinect2(SensorBase):
         rgbFrame = frames.getFrame(pyfreenect2.Frame.COLOR)
         depthFrame = frames.getFrame(pyfreenect2.Frame.DEPTH)
         (undistorted, color_registered, depth_registered) = self.registration.apply(rgbFrame=rgbFrame, depthFrame=depthFrame)
-
         depth_frame = depth_registered.getDepthData()
         rgb_frame = rgbFrame.getRGBData()
+        self.frame_listener.release()
 
         depth_frame[depth_frame == float('inf')] = 0
-
-        self.frame_listener.release()
+        rgb_frame = cv2.resize(rgb_frame, (self.camera.width, self.camera.height))
+        depth_frame = cv2.resize(depth_frame, (self.camera.width, self.camera.height))
         return rgb_frame[:, :, :3], depth_frame

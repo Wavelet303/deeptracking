@@ -10,5 +10,11 @@
   "shader_path": "deeptracking/data/shaders",
   "model_path": "/home/mathieu/Dataset/DeepTrack/Model/clock_v1",
   "video_path": "/home/mathieu/Dataset/DeepTrack/Sequence/clock/seq_1",
-  "mean_std_path": "/home/mathieu/Dataset/DeepTrack/Model/mean_clock_real"
+  "mean_std_path": "/home/mathieu/Dataset/DeepTrack/Model/mean_clock_real",
+  "use_sensor": "True",
+
+  "COMMENT": "Sensor only",
+  "detector_layout_path": "deeptracking/detector/aruco_layout.xml",
+  "sensor_camera_path": "deeptracking/data/sensors/camera_parameter_files/Kinect2_lab_small.json"
+
 }
