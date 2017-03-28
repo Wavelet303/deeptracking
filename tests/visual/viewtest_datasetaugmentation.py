@@ -1,4 +1,3 @@
-import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 from deeptracking.data.dataset import Dataset
@@ -9,6 +8,7 @@ if __name__ == '__main__':
     object_path = "../../synthetic_dataset_test"
     occluder_path = "/home/mathieu/Dataset/DeepTrack/test/hand"
     background_path = "/home/mathieu/Dataset/RGBD/Realsense_backgrounds"
+
     object_dataset = Dataset(object_path)
     object_dataset.load()
 
@@ -21,14 +21,9 @@ if __name__ == '__main__':
     data_augmentation.set_blur(5)
     # data_augmentation.set_jitter(20, 20)
 
-    #object_dataset.set_data_augmenter(data_augmentation)
-
     for i in range(object_dataset.size()):
         rgb, depth, pose = object_dataset.load_image(i)
         rgb_augmented, depth_augmented = data_augmentation.augment(rgb, depth, pose, True)
-
-        cv2.imshow("rgb", rgb[:, :, ::-1])
-        cv2.imshow("rgb_augmented", rgb_augmented[:, :, ::-1])
 
         plt.figure(0)
         plt.imshow(rgb)
@@ -45,5 +40,3 @@ if __name__ == '__main__':
         plt.figure(2)
         plt.imshow(depth.astype(np.int32) - depth_augmented.astype(np.int32))
         plt.show()
-
-        cv2.waitKey()

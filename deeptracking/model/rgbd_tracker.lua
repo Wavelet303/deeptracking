@@ -56,11 +56,10 @@ function RGBDTracker:build_convo(input_channels, c1_filters, c2_filters, final_s
 end
 
 function RGBDTracker:build_model()
-    local linear_size = self.config["linearSize"]
-    local c1_filter_qty = self.config["convo1Filters"]
-    local c2_filter_qty = self.config["convo2Filters"]
-    local output_size = self.config["outputSize"]
-    local input_size = self.config["inputSize"]
+    local linear_size = self.config["linear_size"]
+    local c1_filter_qty = self.config["convo1_size"]
+    local c2_filter_qty = self.config["convo2_size"]
+    local input_size = self.config["input_size"]
     local view = math.floor((((((((input_size-4)/2)-2)/2)-2)/2)-2)/2) -- todo should not be hardcoded..
     local view_size = view * view
 
@@ -76,7 +75,7 @@ function RGBDTracker:build_model()
     self.net:add(nn.Dropout(0.5))
     self.net:add(nn.Linear(c2_filter_qty * view_size, linear_size))
     self.net:add(nn.ELU())
-    self.net:add(nn.Linear(linear_size, output_size))
+    self.net:add(nn.Linear(linear_size, 6))
     self.net:add(nn.Tanh())
 end
 

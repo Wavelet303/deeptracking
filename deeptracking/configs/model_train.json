@@ -7,6 +7,36 @@
       "object_width": "250"
     }
   ],
+
+  "data_augmentation":{
+      "rgb_noise": "2",
+      "depth_noise": "2",
+      "occluder_path": "",
+      "background_path": "",
+      "blur_noise": "5",
+      "hue_noise": "0.05"
+    },
+
+  "training_param":{
+      "learning_rate": "0.005",
+      "learning_rate_decay": "1e-5",
+      "weight_decay": "0",
+      "input_size": "150",
+      "linear_size": "50",
+      "convo1_size": "24",
+      "convo2_size": "48"
+    },
+
+  "logging":{
+      "path": "/tmp/deeptracking",
+      "level": "DEBUG"
+  },
+
+  "train_path": "synthetic_dataset_test",
+  "valid_path": "synthetic_dataset_test",
+
+
+
   "shader_path": "deeptracking/data/shaders",
   "model_path": "/home/mathieu/Dataset/DeepTrack/Model/clock_v1",
   "video_path": "/home/mathieu/Dataset/DeepTrack/Sequence/clock/seq_1",

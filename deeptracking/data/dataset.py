@@ -8,7 +8,7 @@ from deeptracking.data.frame import Frame
 
 
 class Dataset:
-    def __init__(self, folder_path, frame_class=Frame, normalize_param_folder=""):
+    def __init__(self, folder_path, frame_class=Frame):
         self.path = folder_path
         self.data_pose = []
         self.data_pair = {}
@@ -17,6 +17,7 @@ class Dataset:
         self.frame_class = frame_class
         self.mean = None
         self.std = None
+        self.data_augmentation = None
         #if self.normalize:
         #    try:
         #        self.mean = np.load(os.path.join(normalize_param_folder, "mean.npy"))
@@ -113,6 +114,9 @@ class Dataset:
     def get_valid_index(self):
         return np.arange(0, self.size())
 
+    def set_data_augmentation(self, data_augmentation):
+        self.data_augmentation = data_augmentation
+
     def unnormalize_image(self, rgb, depth, type):
         if type == 'viewpoint':
             mean = self.mean[:4]
@@ -149,6 +153,8 @@ class Dataset:
     def get_sample(self, index):
         rgbA, depthA, poseA = self.load_image(index)
         rgbB, depthB, poseB = self.load_pair(index, 0)
-        # augment data
+        if self.data_augmentation is not None:
+            rgbA, depthA = self.data_augmentation.augment(rgbA, depthA, poseA, real=False)
+            rgbB, depthB = self.data_augmentation.augment(rgbB, depthB, poseB, real=True)
         # normalize data
         # return tensors (input, prior, label)

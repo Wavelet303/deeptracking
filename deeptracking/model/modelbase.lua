@@ -46,16 +46,17 @@ function ModelBase:get_configs(name)
     return self.config[name]
 end
 
-function ModelBase:show_model()
-    print(string.format("Backend : %s", self.backend))
-    print(self.net)
+function ModelBase:model_string()
+    local backend_string = string.format("Backend : %s", self.backend)
+    local net_string = string.format("%s\n%s", backend_string, self.net)
+    return net_string
 end
 
-function ModelBase:show_memory_info()
+function ModelBase:memory_info_string()
     require 'cutorch'
-    idx = cutorch.getDevice()
-    freeMemory, totalMemory = cutorch.getMemoryUsage(idx)
-    print(string.format("Free memory : %f Gb, Total memory : %f Gb", freeMemory/1073741824.0, totalMemory/1073741824.0))
+    local idx = cutorch.getDevice()
+    local freeMemory, totalMemory = cutorch.getMemoryUsage(idx)
+    return string.format("Free memory : %f Gb, Total memory : %f Gb", freeMemory/1073741824.0, totalMemory/1073741824.0)
 end
 
 -- Convert tensor based on backend requested
