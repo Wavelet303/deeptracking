@@ -1,4 +1,5 @@
 from deeptracking.data.dataset import Dataset
+from deeptracking.data.rgbd_dataset import RGBDDataset
 
 from scipy import ndimage
 from skimage.color import rgb2hsv, hsv2rgb
@@ -20,10 +21,11 @@ class DataAugmentation:
         self.hue_noise = None
 
     def set_background(self, path):
-        self.background = Dataset(path)
+        self.background = RGBDDataset(path)
 
     def set_occluder(self, path):
         self.occluder = Dataset(path)
+        self.occluder.load()
 
     def set_rgb_noise(self, gaussian_std):
         self.rgb_noise = gaussian_std
@@ -40,7 +42,7 @@ class DataAugmentation:
         self.hue_noise = offset
 
     def set_blur(self, size):
-        self.blur_kernel = self.gkern(size)
+        self.blur_kernel = size
 
     def set_jitter(self, max_x, max_y):
         self.jitter = (max_x, max_y)
@@ -51,9 +53,9 @@ class DataAugmentation:
 
         if real and self.occluder:
             if random.uniform(0, 1) < 0.6:
-                id, type = self.occluder.get_random_id()
-                occluder_rgb, occluder_depth = self.occluder.load_image(id, type)
-                occluder_rgb = self.add_hue_noise(occluder_rgb.T, 1).T
+                rand_id = random.randint(0, self.occluder.size())
+                occluder_rgb, occluder_depth, pose = self.occluder.load_image(rand_id)
+                occluder_rgb = self.add_hue_noise(occluder_rgb, 1)
                 occluder_rgb = imresize(occluder_rgb, ret_depth.shape, interp='nearest')
                 occluder_depth = imresize(occluder_depth, ret_depth.shape, interp='nearest', mode="F").astype(np.int16)
                 ret_rgb, ret_depth = self.depth_blend(ret_rgb, ret_depth, occluder_rgb, occluder_depth)
@@ -85,7 +87,6 @@ class DataAugmentation:
         if real and self.background:
             color_background, depth_background = self.background.load_random_image(ret_rgb.shape[1])
             depth_background = depth_background.astype(np.int32)
-            depth_background += int(prior[2] * 1000)
             ret_rgb, ret_depth = self.color_blend(ret_rgb, ret_depth, color_background, depth_background)
 
         if real and self.rgb_noise:
@@ -98,12 +99,16 @@ class DataAugmentation:
                 ret_depth = self.add_noise(ret_depth, noise)
 
         if real and self.blur_kernel is not None:
-            if random.uniform(0, 1) < 0.4:
-                ret_rgb[0, :, :] = scipy.signal.convolve2d(ret_rgb[0, :, :], self.blur_kernel, mode='same')
-                ret_rgb[1, :, :] = scipy.signal.convolve2d(ret_rgb[1, :, :], self.blur_kernel, mode='same')
-                ret_rgb[2, :, :] = scipy.signal.convolve2d(ret_rgb[2, :, :], self.blur_kernel, mode='same')
-            if random.uniform(0, 1) < 0.4:
-                ret_depth[:, :] = scipy.signal.convolve2d(ret_depth[:, :], self.blur_kernel, mode='same')
+            if random.uniform(0, 1) < 0.75:
+                kernel_size = random.randint(3, self.blur_kernel)
+                kernel = self.gkern(kernel_size)
+                ret_rgb[0, :, :] = scipy.signal.convolve2d(ret_rgb[0, :, :], kernel, mode='same')
+                ret_rgb[1, :, :] = scipy.signal.convolve2d(ret_rgb[1, :, :], kernel, mode='same')
+                ret_rgb[2, :, :] = scipy.signal.convolve2d(ret_rgb[2, :, :], kernel, mode='same')
+            if random.uniform(0, 1) < 0.75:
+                kernel_size = random.randint(3, self.blur_kernel)
+                kernel = self.gkern(kernel_size)
+                ret_depth[:, :] = scipy.signal.convolve2d(ret_depth[:, :], kernel, mode='same')
 
         return ret_rgb.astype(np.uint8), ret_depth
 

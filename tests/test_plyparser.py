@@ -46,8 +46,8 @@ class TestTransformMethods(unittest.TestCase):
 
         np.testing.assert_almost_equal(colors, truth, 4)
 
-    def test_it_should_return_none_if_no_color(self):
-        self.assertIsNone(self.basic.get_vertex_color())
+    def test_it_should_raise_keyerror_if_no_color(self):
+        self.assertRaises(KeyError, self.basic.get_vertex_color)
 
     def test_it_should_return_texture_coords(self):
         coords = self.basic_color.get_texture_coord()
@@ -56,8 +56,8 @@ class TestTransformMethods(unittest.TestCase):
 
         np.testing.assert_almost_equal(coords, truth, 4)
 
-    def test_it_should_return_none_if_no_texture_coord(self):
-        self.assertIsNone(self.basic.get_texture_coord())
+    def test_it_should_assert_keyerror_if_no_texture_coord(self):
+        self.assertRaises(KeyError, self.basic.get_texture_coord)
 
     def test_it_should_return_faces(self):
         faces = self.basic_color.get_faces()
@@ -69,5 +69,5 @@ class TestTransformMethods(unittest.TestCase):
                           [3, 7, 4, 0]], dtype=np.int32)
         np.testing.assert_almost_equal(faces, truth, 4)
 
-    def test_it_should_return_none_if_no_faces(self):
-        self.assertIsNone(self.basic.get_faces())
+    def test_it_should_raise_keyerror_if_no_faces(self):
+        self.assertRaises(KeyError, self.basic.get_faces)

@@ -29,6 +29,7 @@ class PlyParser:
         for element in self.data.elements:
             if element.name == "vertex":
                 return PlyParser.recarray_to_array(element.data[["x", "y", "z"]], np.float32)
+        raise KeyError("No field vertex with x, y, z in ply file.")
 
     def get_vertex_color(self):
         for element in self.data.elements:
@@ -37,7 +38,7 @@ class PlyParser:
                     return PlyParser.recarray_to_array(element.data[["red", "green", "blue"]], np.uint8)
                 except ValueError:
                     break
-        return None
+        raise KeyError("No field vertex with red, green, blue in ply file.")
 
     def get_vertex_normals(self):
         for element in self.data.elements:
@@ -46,7 +47,7 @@ class PlyParser:
                     return PlyParser.recarray_to_array(element.data[["nx", "ny", "nz"]], np.float32)
                 except ValueError:
                     break
-        return None
+        raise KeyError("No field vertex with normals nx, ny, nz in ply file.")
 
     def get_texture_coord(self):
         for element in self.data.elements:
@@ -55,7 +56,7 @@ class PlyParser:
                     return PlyParser.recarray_to_array(element.data[["texture_u", "texture_v"]], np.float32)
                 except ValueError:
                     break
-        return None
+        raise KeyError("No field vertex with texture coord 'texture_u' and 'texture_v' in ply file.")
 
     def get_faces(self):
         for element in self.data.elements:
@@ -69,7 +70,7 @@ class PlyParser:
                 for i, face in enumerate(faces_object):
                     faces[i, :] = face
                 return faces
-        return None
+        raise KeyError("No field face with vertex_indices.")
 
     @staticmethod
     def recarray_to_array(array, type):
