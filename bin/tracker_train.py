@@ -10,7 +10,7 @@ import logging.config
 from datetime import datetime
 import os
 
-from deeptracking.utils.train_logger import TrainLogger
+from deeptracking.utils.slack_logger import SlackLogger
 
 
 def config_logging(data):
@@ -41,7 +41,7 @@ def config_logging(data):
             }
         }
     }
-    logging.setLoggerClass(TrainLogger)
+    logging.setLoggerClass(SlackLogger)
     logging.config.dictConfig(dictLogConfig)
 
 if __name__ == '__main__':
