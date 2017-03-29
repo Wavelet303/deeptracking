@@ -73,7 +73,7 @@ function RGBDTracker:build_model()
     self.net:add(merge)
     self.net:add(nn.JoinTable(1, 1))
     self.net:add(nn.Dropout(0.5))
-    self.net:add(nn.Linear(c2_filter_qty * view_size, linear_size))
+    self.net:add(nn.Linear(c2_filter_qty * view_size + 4, linear_size))
     self.net:add(nn.ELU())
     self.net:add(nn.Linear(linear_size, 6))
     self.net:add(nn.Tanh())
@@ -82,8 +82,8 @@ end
 function RGBDTracker:convert_inputs(inputs)
     self.inputTensor = self:setup_tensor(inputs[1], self.inputTensor)
     self.priorTensor = self:setup_tensor(inputs[2][{ {},{4,7} }], self.priorTensor)
-    --local ret = {{self.inputTensor[{{}, {1,4}, {}, {}}], self.inputTensor[{{}, {5,8}, {}, {}}] }, self.priorTensor }
-    local ret = {self.inputTensor[{{}, {1,4}, {}, {}}], self.inputTensor[{{}, {5,8}, {}, {}}] }
+    local ret = {{self.inputTensor[{{}, {1,4}, {}, {}}], self.inputTensor[{{}, {5,8}, {}, {}}] }, self.priorTensor }
+    --local ret = {self.inputTensor[{{}, {1,4}, {}, {}}], self.inputTensor[{{}, {5,8}, {}, {}}] }
 
     return ret
 end
@@ -126,14 +126,8 @@ function RGBDTracker:extract_grad_statistic()
     local grad_trans_median = torch.mean(y)
     local grad_trans_min = torch.min(translation_view)
     local grad_trans_max = torch.max(translation_view)
-    return {grad_rot_mean=grad_rot_mean,
-            grad_rot_median=grad_rot_median,
-            grad_rot_min=grad_rot_min,
-            grad_rot_max=grad_rot_max,
-            grad_trans_mean=grad_trans_mean,
-            grad_trans_median=grad_trans_median,
-            grad_trans_min=grad_trans_min,
-            grad_trans_max=grad_trans_max}
+    return {{grad_rot_mean=grad_rot_mean, grad_rot_median=grad_rot_median, grad_rot_min=grad_rot_min, grad_rot_max=grad_rot_max},
+            {grad_trans_mean=grad_trans_mean, grad_trans_median=grad_trans_median, grad_trans_min=grad_trans_min, grad_trans_max=grad_trans_max}}
 end
 
 

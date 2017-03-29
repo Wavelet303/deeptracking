@@ -40,6 +40,26 @@ class TestDatasetMethods(unittest.TestCase):
             truth[i] = [i, i+1]
         np.testing.assert_almost_equal(self.logger.get_as_numpy(self.df_label), truth)
 
+    def test_it_should_add_row_from_dict(self):
+        data = {"B": 0, "A": 1}
+        truth = np.zeros((1, 2))
+        truth[0, 0] = 1
+        self.logger.add_row_from_dict(self.df_label, data)
+        np.testing.assert_almost_equal(self.logger.get_as_numpy(self.df_label), truth)
+
+    def test_it_should_throw_exception_if_add_row_from_dict_missing_data(self):
+        data = {"B": 0, "C": 1}
+        truth = np.zeros((1, 2))
+        truth[0, 0] = 1
+        self.assertRaises(KeyError, self.logger.add_row_from_dict, self.df_label, data)
+
+    def test_it_should_return_columns_in_order(self):
+        cols = ["a", "A", "8", "test", "Z", "C"]
+        name = "manycol"
+        self.logger.create_dataframe(name, cols)
+        col_names = self.logger.get_dataframe_columns(name)
+        self.assertListEqual(col_names, cols)
+
     def test_simple_load_save_test(self):
         """
         Should use mock object but this is simple and efficient...

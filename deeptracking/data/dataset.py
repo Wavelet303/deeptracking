@@ -2,13 +2,15 @@ import os
 import numpy as np
 import json
 
+from deeptracking.data.parallelminibatch import ParallelMinibatch
 from deeptracking.utils.transform import Transform
 from deeptracking.utils.camera import Camera
 from deeptracking.data.frame import Frame
 
 
-class Dataset:
-    def __init__(self, folder_path, frame_class=Frame):
+class Dataset(ParallelMinibatch):
+    def __init__(self, folder_path, frame_class=Frame, minibatch_size=64, max_parallel_buffer_size=0):
+        ParallelMinibatch.__init__(self, max_parallel_buffer_size)
         self.path = folder_path
         self.data_pose = []
         self.data_pair = {}
@@ -18,6 +20,7 @@ class Dataset:
         self.mean = None
         self.std = None
         self.data_augmentation = None
+        self.minibatch_size = minibatch_size
         #if self.normalize:
         #    try:
         #        self.mean = np.load(os.path.join(normalize_param_folder, "mean.npy"))
@@ -74,13 +77,12 @@ class Dataset:
         Todo: datastructure should be more similar to json structure...
         :return:
         """
-        try:
-            # Load viewpoints file and camera file
-            with open(os.path.join(self.path, "viewpoints.json")) as data_file:
-                data = json.load(data_file)
-            self.camera = Camera.load_from_json(self.path)
-        except FileNotFoundError:
-            return -1
+        # Load viewpoints file and camera file
+        with open(os.path.join(self.path, "viewpoints.json")) as data_file:
+            data = json.load(data_file)
+        self.camera = Camera.load_from_json(self.path)
+        self.metadata = data["metaData"]
+
         count = 0
         while True:
             try:
@@ -95,7 +97,7 @@ class Dataset:
                 count += 1
 
             except KeyError:
-                return 1
+                return
 
     @staticmethod
     def insert_pose_in_dict(dict, key, item):
@@ -106,10 +108,6 @@ class Dataset:
 
     def size(self):
         return len(self.data_pose)
-
-    def get_permutations(self, minibatch_size):
-        permutations = np.random.permutation(self.get_valid_index())
-        return [permutations[x:x + minibatch_size] for x in range(0, len(permutations), minibatch_size)]
 
     def get_valid_index(self):
         return np.arange(0, self.size())
@@ -150,11 +148,32 @@ class Dataset:
         rgb, depth = frame.get_rgb_depth(self.path)
         return rgb, depth, pose
 
-    def get_sample(self, index):
+    def get_sample(self, index, image_buffer, prior_buffer, label_buffer, buffer_index):
         rgbA, depthA, poseA = self.load_image(index)
         rgbB, depthB, poseB = self.load_pair(index, 0)
         if self.data_augmentation is not None:
             rgbA, depthA = self.data_augmentation.augment(rgbA, depthA, poseA, real=False)
             rgbB, depthB = self.data_augmentation.augment(rgbB, depthB, poseB, real=True)
         # normalize data
-        # return tensors (input, prior, label)
+        #image_buffer[buffer_index] = None
+        prior_buffer[buffer_index] = poseA.to_parameters(isQuaternion=True)
+        label_buffer[buffer_index] = poseB.to_parameters()
+
+    def get_permutations(self, minibatch_size):
+        permutations = np.random.permutation(self.get_valid_index())
+        return [permutations[x:x + minibatch_size] for x in range(0, len(permutations), minibatch_size)]
+
+    """
+        PARALLEL MINIBATCH METHODS
+    """
+    def compute_minibatches_permutations_(self):
+        permutations = np.random.permutation(self.get_valid_index())
+        return [permutations[x:x + self.minibatch_size] for x in range(0, len(permutations), self.minibatch_size)]
+
+    def load_minibatch(self, task):
+        image_buffer = np.ndarray((len(task), 8, int(self.metadata["image_size"]), int(self.metadata["image_size"])), dtype=np.float32)
+        prior_buffer = np.ndarray((len(task), 7), dtype=np.float32)
+        label_buffer = np.ndarray((len(task), 6), dtype=np.float32)
+        for buffer_index, permutation in enumerate(task):
+            self.get_sample(permutation, image_buffer, prior_buffer, label_buffer, buffer_index)
+        return image_buffer, prior_buffer, label_buffer

@@ -74,11 +74,8 @@ class ParallelMinibatch:
         if not self.processes:
             raise Exception("init_processes before getting minibatches")
         for i in range(self.task_qty):
-            try:
-                result = self.results.get(block=True, timeout=None)
-                yield result
-            except:
-                raise Exception("exception in get minibatch")
+            result = self.results.get(block=True, timeout=None)
+            yield result
         self.task_qty = 0
 
     @abc.abstractmethod

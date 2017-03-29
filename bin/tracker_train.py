@@ -7,14 +7,20 @@ import sys
 import json
 import logging
 import logging.config
+import numpy as np
 from datetime import datetime
 import os
 
+from deeptracking.utils.data_logger import DataLogger
 from deeptracking.utils.slack_logger import SlackLogger
 
 
+def get_current_time():
+    return datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+
+
 def config_logging(data):
-    logging_filename = "{}.log".format(datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
+    logging_filename = "{}.log".format(get_current_time())
     logging_path = data["logging"]["path"]
     path = os.path.join(logging_path, logging_filename)
     if not os.path.exists(logging_path):
@@ -43,6 +49,93 @@ def config_logging(data):
     }
     logging.setLoggerClass(SlackLogger)
     logging.config.dictConfig(dictLogConfig)
+    return logging.getLogger("Model Training")
+
+
+def config_datasets(data):
+    train_path = data["train_path"]
+    valid_path = data["valid_path"]
+    mean_std_path = data["mean_std_path"]
+    minibatch_size = int(data["minibatch_size"])
+    rgb_noise = float(data["data_augmentation"]["rgb_noise"])
+    depth_noise = float(data["data_augmentation"]["depth_noise"])
+    occluder_path = data["data_augmentation"]["occluder_path"]
+    background_path = data["data_augmentation"]["background_path"]
+    blur_noise = int(data["data_augmentation"]["blur_noise"])
+    hue_noise = float(data["data_augmentation"]["hue_noise"])
+
+    data_augmentation = DataAugmentation()
+    data_augmentation.set_rgb_noise(rgb_noise)
+    data_augmentation.set_depth_noise(depth_noise)
+    if occluder_path != "":
+        data_augmentation.set_occluder(occluder_path)
+    if background_path != "":
+        data_augmentation.set_background(background_path)
+    data_augmentation.set_blur(blur_noise)
+    data_augmentation.set_hue_noise(hue_noise)
+
+    train_dataset = Dataset(train_path, minibatch_size=minibatch_size)
+    train_dataset.load()
+    train_dataset.set_data_augmentation(data_augmentation)
+    valid_dataset = Dataset(valid_path, minibatch_size=minibatch_size)
+    valid_dataset.load()
+    valid_dataset.set_data_augmentation(data_augmentation)
+    return train_dataset, valid_dataset
+
+
+def config_model(data, dataset_metadata):
+    learning_rate = float(data["training_param"]["learning_rate"])
+    learning_rate_decay = float(data["training_param"]["learning_rate_decay"])
+    weight_decay = float(data["training_param"]["weight_decay"])
+    input_size = int(data["training_param"]["input_size"])
+    linear_size = int(data["training_param"]["linear_size"])
+    convo1_size = int(data["training_param"]["convo1_size"])
+    convo2_size = int(data["training_param"]["convo2_size"])
+    model_class = PyTorchHelpers.load_lua_class("deeptracking/model/rgbd_tracker.lua", 'RGBDTracker')
+    tracker_model = model_class('cuda')
+    tracker_model.set_configs({
+        "learningRate": learning_rate,
+        "learningRateDecay": learning_rate_decay,
+        "weightDecay": weight_decay,
+        "input_size": input_size,
+        "linear_size": linear_size,
+        "convo1_size": convo1_size,
+        "convo2_size": convo2_size,
+        # Necessary data at test time, the user can get all information while loading the model and its configs
+        "translation_range": float(dataset_metadata["translation_range"]),
+        "rotation_range": float(dataset_metadata["rotation_range"]),
+        "render_scale": dataset_metadata["object_width"]
+    })
+    tracker_model.build_model()
+    tracker_model.init_model()
+    return tracker_model
+
+
+def train_loop(model, dataset, logger):
+    with dataset:
+        minibatchs = dataset.get_minibatch()
+        for image_buffer, prior_buffer, label_buffer in minibatchs:
+            losses = model.train([image_buffer, prior_buffer], label_buffer)
+            statistics = model.extract_grad_statistic()
+            logger.add_row("Minibatch", [losses["label"]])
+            logger.add_row_from_dict("Grad_Rotation", statistics[1])
+            logger.add_row_from_dict("Grad_Translation", statistics[2])
+    total_loss = data_logger.get_as_numpy("Minibatch")[:, 0]
+    mean_loss = 0 if len(total_loss) < 5 else np.mean(total_loss[-5:])
+    return mean_loss
+
+
+def validation_loop(model, dataset):
+    with dataset:
+        loss_sum = 0
+        loss_qty = 0
+        minibatchs = dataset.get_minibatch()
+        for image_buffer, prior_buffer, label_buffer in minibatchs:
+            prediction = model.test([image_buffer, prior_buffer])
+            losses = model.loss_function(prediction, label_buffer)
+            loss_sum += losses["label"]
+            loss_qty += 1
+    return loss_sum / loss_qty
 
 if __name__ == '__main__':
     args = ArgumentParser(sys.argv[1:])
@@ -53,62 +146,44 @@ if __name__ == '__main__':
     with open(args.config_file) as data_file:
         data = json.load(data_file)
 
-    # Populate important data from config file
-    TRAIN_PATH = data["train_path"]
-    VALID_PATH = data["valid_path"]
-    MEAN_STD_PATH = data["mean_std_path"]
+    message_logger = config_logging(data)
+    data_logger = DataLogger()
+    data_logger.create_dataframe("Epoch", ["Train", "Valid"])
+    data_logger.create_dataframe("Minibatch", ["Train"])
+    data_logger.create_dataframe("Grad_Rotation", ["grad_rot_mean", "grad_rot_median", "grad_rot_min", "grad_rot_max"])
+    data_logger.create_dataframe("Grad_Translation", ["grad_trans_mean", "grad_trans_median", "grad_trans_min", "grad_trans_max"])
 
-    RGB_NOISE = float(data["data_augmentation"]["rgb_noise"])
-    DEPTH_NOISE = float(data["data_augmentation"]["depth_noise"])
-    OCCLUDER_PATH = data["data_augmentation"]["occluder_path"]
-    BACKGROUND_PATH = data["data_augmentation"]["background_path"]
-    BLUR_NOISE = int(data["data_augmentation"]["blur_noise"])
-    HUE_NOISE = float(data["data_augmentation"]["hue_noise"])
+    message_logger.info("Setup Datasets")
+    train_dataset, valid_dataset = config_datasets(data)
 
-    LEARNING_RATE = float(data["training_param"]["learning_rate"])
-    LEARNING_RATE_DECAY = float(data["training_param"]["learning_rate_decay"])
-    WEIGHT_DECAY = float(data["training_param"]["weight_decay"])
-    INPUT_SIZE = int(data["training_param"]["input_size"])
-    LINEAR_SIZE = int(data["training_param"]["linear_size"])
-    CONVO1_SIZE = int(data["training_param"]["convo1_size"])
-    CONVO2_SIZE = int(data["training_param"]["convo2_size"])
+    message_logger.info("Setup Model")
+    tracker_model = config_model(data, train_dataset.metadata)
+    message_logger.debug(tracker_model.model_string())
+    #message_logger.slack("Start Train...")
 
-    config_logging(data)
-    logger = logging.getLogger("Model Training")
-    print(logger)
+    MAX_EPOCH = int(data["max_epoch"])
+    OUTPUT_PATH = data["output_path"]
+    EARLY_STOP_WAIT_LIMIT = int(data["early_stop_wait_limit"])
 
-    logger.info("Setup Datasets")
-    data_augmentation = DataAugmentation()
-    data_augmentation.set_rgb_noise(RGB_NOISE)
-    data_augmentation.set_depth_noise(DEPTH_NOISE)
-    if OCCLUDER_PATH != "":
-        data_augmentation.set_occluder(OCCLUDER_PATH)
-    if BACKGROUND_PATH != "":
-        data_augmentation.set_background(BACKGROUND_PATH)
-    data_augmentation.set_blur(BLUR_NOISE)
-    data_augmentation.set_hue_noise(HUE_NOISE)
+    if not os.path.exists(OUTPUT_PATH):
+        os.mkdir(OUTPUT_PATH)
 
-    train_dataset = Dataset(TRAIN_PATH)
-    train_dataset.load()
-    train_dataset.set_data_augmentation(data_augmentation)
-    valid_dataset = Dataset(VALID_PATH)
-    valid_dataset.load()
-    valid_dataset.set_data_augmentation(data_augmentation)
+    best_validation_loss = 1000
+    best_epoch = 0
+    early_stop_wait = 0
+    for epoch in range(MAX_EPOCH):
+        train_loss = train_loop(tracker_model, train_dataset, data_logger)
+        val_loss = validation_loop(tracker_model, valid_dataset)
+        data_logger.add_row("Epoch", [train_loss, val_loss])
+        # Early Stop
+        if val_loss < best_validation_loss:
+            best_validation_loss = val_loss
+            best_epoch = epoch
+            tracker_model.save(OUTPUT_PATH)
+            early_stop_wait = 0
+        else:
+            early_stop_wait += 1
+            if early_stop_wait > EARLY_STOP_WAIT_LIMIT:
+                break
 
-    logger.info("Setup Model")
-    model_class = PyTorchHelpers.load_lua_class("deeptracking/model/rgbd_tracker.lua", 'RGBDTracker')
-    tracker_model = model_class('cuda')
-    tracker_model.set_configs({
-        "learningRate": LEARNING_RATE,
-        "learningRateDecay": LEARNING_RATE_DECAY,
-        "weightDecay": WEIGHT_DECAY,
-        "input_size": INPUT_SIZE,
-        "linear_size": LINEAR_SIZE,
-        "convo1_size": CONVO1_SIZE,
-        "convo2_size": CONVO2_SIZE
-    })
-    tracker_model.build_model()
-    tracker_model.init_model()
-    logger.debug(tracker_model.model_string())
-    logger.slack("test")
-    logger.data("oui", 3)
+

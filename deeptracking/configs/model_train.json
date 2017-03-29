@@ -32,9 +32,12 @@
       "level": "DEBUG"
   },
 
-  "train_path": "synthetic_dataset_test",
-  "valid_path": "synthetic_dataset_test",
-
+  "train_path": "synthetic_dataset_test_nogit",
+  "valid_path": "synthetic_dataset_test_nogit",
+  "output_path": "train_test_nogit",
+  "minibatch_size": "5",
+  "max_epoch": "20",
+  "early_stop_wait_limit" : "5",
 
 
   "shader_path": "deeptracking/data/shaders",

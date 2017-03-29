@@ -9,6 +9,9 @@ class DataLogger:
     def get_dataframes_id(self):
         return list(self.data_frames.keys())
 
+    def get_dataframe_columns(self, id):
+        return list(self.data_frames[id].columns.values)
+
     def create_dataframe(self, id, tags):
         self.data_frames[id] = pd.DataFrame(columns=tags)
 
@@ -17,6 +20,10 @@ class DataLogger:
         if len(data) != df_shape[1]:
             raise IndexError("Dataframe and input data has different size : df:{} input:{}".format(df_shape[1], len(data)))
         self.data_frames[id].loc[df_shape[0]] = data
+
+    def add_row_from_dict(self, id, data):
+        cols = self.get_dataframe_columns(id)
+        self.add_row(id, [data[x] for x in cols])
 
     def get_as_numpy(self, id):
         return self.data_frames[id].as_matrix()
