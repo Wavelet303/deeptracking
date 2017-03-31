@@ -26,7 +26,6 @@ if __name__ == '__main__':
     MODEL_PATH = data["model_path"]
     MODELS_3D = data["models"]
     SHADER_PATH = data["shader_path"]
-    MEAN_STD_PATH = data["mean_std_path"]
 
     OBJECT_WIDTH = int(MODELS_3D[0]["object_width"])
     MODEL_3D_PATH = MODELS_3D[0]["model_path"]
@@ -51,7 +50,6 @@ if __name__ == '__main__':
         camera = video_data.camera
 
     tracker = DeepTracker(camera,
-                          MEAN_STD_PATH,
                           OBJECT_WIDTH,
                           MODEL_3D_PATH,
                           MODEL_3D_AO_PATH,

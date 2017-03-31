@@ -8,6 +8,7 @@ import json
 import logging
 import logging.config
 import numpy as np
+import math
 from datetime import datetime
 import os
 
@@ -15,47 +16,61 @@ from deeptracking.utils.data_logger import DataLogger
 from deeptracking.utils.slack_logger import SlackLogger
 
 
-def get_current_time():
-    return datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+def get_current_time(with_dashes=False):
+    string = '%Y/%m/%d %H:%M:%S'
+    if with_dashes:
+        string = '%Y-%m-%d_%H-%M-%S'
+    return datetime.now().strftime(string)
 
 
 def config_logging(data):
-    logging_filename = "{}.log".format(get_current_time())
+    logging_filename = "{}.log".format(get_current_time(with_dashes=True))
     logging_path = data["logging"]["path"]
     path = os.path.join(logging_path, logging_filename)
     if not os.path.exists(logging_path):
         os.mkdir(logging_path)
     dictLogConfig = {
         "version": 1,
+        'disable_existing_loggers': False,
         "handlers": {
+            "default": {
+                "class": "logging.StreamHandler",
+                "formatter": "basic_formatter",
+                "stream": 'ext://sys.stdout',
+            },
             "fileHandler": {
                 "class": "logging.FileHandler",
-                "formatter": "basic_formatter",
-                "filename": path
-            }
+                "formatter": "detailed",
+                "filename": path,
+            },
         },
         "loggers": {
-            "Model Training": {
-                "handlers": ["fileHandler"],
+            __name__: {
+                "handlers": ["fileHandler", "default"],
                 "level": data["logging"]["level"],
+                "propagate": False
             }
         },
 
         "formatters": {
             "basic_formatter": {
-                "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+                'format': '[%(levelname)s] %(message)s',
+            },
+            "detailed": {
+                'format': '%(asctime)s %(name)s[%(levelname)s] %(filename)s:%(lineno)d %(message)s',
+                'datefmt': "%Y-%m-%d %H:%M:%S",
             }
         }
     }
     logging.setLoggerClass(SlackLogger)
+    logger = logging.getLogger(__name__)
     logging.config.dictConfig(dictLogConfig)
-    return logging.getLogger("Model Training")
+    return logger
 
 
 def config_datasets(data):
     train_path = data["train_path"]
     valid_path = data["valid_path"]
-    mean_std_path = data["mean_std_path"]
     minibatch_size = int(data["minibatch_size"])
     rgb_noise = float(data["data_augmentation"]["rgb_noise"])
     depth_noise = float(data["data_augmentation"]["depth_noise"])
@@ -83,7 +98,8 @@ def config_datasets(data):
     return train_dataset, valid_dataset
 
 
-def config_model(data, dataset_metadata):
+def config_model(data, dataset):
+    dataset_metadata = dataset.metadata
     learning_rate = float(data["training_param"]["learning_rate"])
     learning_rate_decay = float(data["training_param"]["learning_rate_decay"])
     weight_decay = float(data["training_param"]["weight_decay"])
@@ -91,7 +107,7 @@ def config_model(data, dataset_metadata):
     linear_size = int(data["training_param"]["linear_size"])
     convo1_size = int(data["training_param"]["convo1_size"])
     convo2_size = int(data["training_param"]["convo2_size"])
-    model_class = PyTorchHelpers.load_lua_class("deeptracking/model/rgbd_tracker.lua", 'RGBDTracker')
+    model_class = PyTorchHelpers.load_lua_class("deeptracking/tracker/rgbd_tracker.lua", 'RGBDTracker')
     tracker_model = model_class('cuda')
     tracker_model.set_configs({
         "learningRate": learning_rate,
@@ -104,22 +120,29 @@ def config_model(data, dataset_metadata):
         # Necessary data at test time, the user can get all information while loading the model and its configs
         "translation_range": float(dataset_metadata["translation_range"]),
         "rotation_range": float(dataset_metadata["rotation_range"]),
-        "render_scale": dataset_metadata["object_width"]
+        "render_scale": dataset_metadata["object_width"],
+        "mean_matrix": dataset.mean,
+        "std_matrix": dataset.std
     })
     tracker_model.build_model()
     tracker_model.init_model()
     return tracker_model
 
 
-def train_loop(model, dataset, logger):
+def train_loop(model, dataset, logger, log_message_ratio=0.01):
     with dataset:
+        batch_message_intervals = math.ceil(float(dataset.get_batch_qty()) * log_message_ratio)
         minibatchs = dataset.get_minibatch()
-        for image_buffer, prior_buffer, label_buffer in minibatchs:
+        for i, minibatch in enumerate(minibatchs):
+            image_buffer, prior_buffer, label_buffer = minibatch
             losses = model.train([image_buffer, prior_buffer], label_buffer)
             statistics = model.extract_grad_statistic()
             logger.add_row("Minibatch", [losses["label"]])
             logger.add_row_from_dict("Grad_Rotation", statistics[1])
             logger.add_row_from_dict("Grad_Translation", statistics[2])
+            if i % batch_message_intervals == 0:
+                message_logger.info("[{}%] : Train loss: {}".format(int(float(i)/float(dataset.get_batch_qty())*100), losses["label"]))
+
     total_loss = data_logger.get_as_numpy("Minibatch")[:, 0]
     mean_loss = 0 if len(total_loss) < 5 else np.mean(total_loss[-5:])
     return mean_loss
@@ -157,9 +180,8 @@ if __name__ == '__main__':
     train_dataset, valid_dataset = config_datasets(data)
 
     message_logger.info("Setup Model")
-    tracker_model = config_model(data, train_dataset.metadata)
+    tracker_model = config_model(data, train_dataset)
     message_logger.debug(tracker_model.model_string())
-    #message_logger.slack("Start Train...")
 
     MAX_EPOCH = int(data["max_epoch"])
     OUTPUT_PATH = data["output_path"]
@@ -168,22 +190,26 @@ if __name__ == '__main__':
     if not os.path.exists(OUTPUT_PATH):
         os.mkdir(OUTPUT_PATH)
 
+    message_logger.slack("Train start at {}".format(get_current_time()))
     best_validation_loss = 1000
     best_epoch = 0
     early_stop_wait = 0
     for epoch in range(MAX_EPOCH):
         train_loss = train_loop(tracker_model, train_dataset, data_logger)
         val_loss = validation_loop(tracker_model, valid_dataset)
+        message_logger.slack("[Epoch {}] Train loss: {} Val loss: {}".format(epoch, train_loss, val_loss))
         data_logger.add_row("Epoch", [train_loss, val_loss])
         # Early Stop
         if val_loss < best_validation_loss:
             best_validation_loss = val_loss
             best_epoch = epoch
-            tracker_model.save(OUTPUT_PATH)
+            tracker_model.save(os.path.join(OUTPUT_PATH, data["session_name"]))
             early_stop_wait = 0
         else:
             early_stop_wait += 1
             if early_stop_wait > EARLY_STOP_WAIT_LIMIT:
                 break
-
+    data_logger.save(OUTPUT_PATH)
+    message_logger.slack("Train Terminated at {}".format(get_current_time()))
+    message_logger.slack("Total Epoch: {}\nBest Validation Loss: {}".format(best_epoch, best_validation_loss))
 

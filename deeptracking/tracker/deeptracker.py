@@ -9,7 +9,7 @@ import os
 
 
 class DeepTracker(TrackerBase):
-    def __init__(self, camera, mean_std_path, object_width=0, model_3d_path="", model_3d_ao_path="", shader_path=""):
+    def __init__(self, camera, object_width=0, model_3d_path="", model_3d_ao_path="", shader_path=""):
         self.image_size = None
         self.tracker_model = None
         self.translation_range = None
@@ -22,19 +22,14 @@ class DeepTracker(TrackerBase):
         self.object_width = object_width
 
         # setup model
-        model_class = PyTorchHelpers.load_lua_class("deeptracking/model/rgbd_tracker.lua", 'RGBDTracker')
+        model_class = PyTorchHelpers.load_lua_class("deeptracking/tracker/rgbd_tracker.lua", 'RGBDTracker')
         self.tracker_model = model_class('cuda')
-        self.tracker_model.build_model()
-        self.tracker_model.init_model()
-        self.load_parameters_from_model_()
-        self.load_mean_std_(mean_std_path)
 
         if model_3d_path != "" and model_3d_ao_path != "" and shader_path != "":
             self.setup_renderer(model_3d_path, model_3d_ao_path, shader_path)
 
-        # setup buffers
-        self.input_buffer = np.ndarray((1, 8, self.image_size[0], self.image_size[1]), dtype=np.float32)
-        self.prior_buffer = np.ndarray((1, 7), dtype=np.float32)
+        self.input_buffer = None
+        self.prior_buffer = None
 
     def setup_renderer(self, model_3d_path, model_3d_ao_path, shader_path):
         window = InitOpenGL(self.camera.width, self.camera.height)
@@ -43,25 +38,26 @@ class DeepTracker(TrackerBase):
 
     def load(self, path):
         self.tracker_model.load(path)
+        self.load_parameters_from_model_()
 
     def print(self):
-        self.tracker_model.show_model()
-
-    def load_mean_std_(self, path):
-        self.mean = np.load(os.path.join(path, "mean.npy"))
-        self.std = np.load(os.path.join(path, "std.npy"))
+        print(self.tracker_model.model_string())
 
     def load_parameters_from_model_(self):
-        self.image_size = (int(self.tracker_model.get_configs("inputSize")), int(self.tracker_model.get_configs("inputSize")))
+        self.image_size = (int(self.tracker_model.get_configs("input_size")), int(self.tracker_model.get_configs("input_size")))
         self.translation_range = float(self.tracker_model.get_configs("translation_range"))
         self.rotation_range = float(self.tracker_model.get_configs("rotation_range"))
+        self.input_buffer = np.ndarray((1, 8, self.image_size[0], self.image_size[1]), dtype=np.float32)
+        self.prior_buffer = np.ndarray((1, 7), dtype=np.float32)
+        self.mean = self.tracker_model.get_configs("mean_matrix").asNumpyTensor()
+        self.std = self.tracker_model.get_configs("std_matrix").asNumpyTensor()
 
     def set_configs_(self, configs):
         self.tracker_model.set_configs(configs)
 
     def estimate_current_pose(self, previous_pose, current_rgb, current_depth):
         render_rgb, render_depth = self.renderer.render(previous_pose.inverse().transpose())
-        #todo implement this part in gpu...
+        #todo implement this part on gpu...
         rgbA, depthA = normalize_scale(render_rgb, render_depth, previous_pose, self.camera, self.image_size,
                                        self.object_width)
         rgbB, depthB = normalize_scale(current_rgb, current_depth, previous_pose, self.camera, self.image_size,

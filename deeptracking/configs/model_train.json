@@ -1,13 +1,4 @@
 {
-  "models": [
-    {
-      "name": "clock",
-      "model_path": "/home/mathieu/Dataset/3D_models/clock/clock.ply",
-      "ambiant_occlusion_model": "/home/mathieu/Dataset/3D_models/clock/clock_ao.ply",
-      "object_width": "250"
-    }
-  ],
-
   "data_augmentation":{
       "rgb_noise": "2",
       "depth_noise": "2",
@@ -32,22 +23,11 @@
       "level": "DEBUG"
   },
 
+  "session_name": "test",
   "train_path": "synthetic_dataset_test_nogit",
   "valid_path": "synthetic_dataset_test_nogit",
   "output_path": "train_test_nogit",
   "minibatch_size": "5",
   "max_epoch": "20",
-  "early_stop_wait_limit" : "5",
-
-
-  "shader_path": "deeptracking/data/shaders",
-  "model_path": "/home/mathieu/Dataset/DeepTrack/Model/clock_v1",
-  "video_path": "/home/mathieu/Dataset/DeepTrack/Sequence/clock/seq_1",
-  "mean_std_path": "/home/mathieu/Dataset/DeepTrack/Model/mean_clock_real",
-  "use_sensor": "True",
-
-  "COMMENT": "Sensor only",
-  "detector_layout_path": "deeptracking/detector/aruco_layout.xml",
-  "sensor_camera_path": "deeptracking/data/sensors/camera_parameter_files/Kinect2_lab_small.json"
-
+  "early_stop_wait_limit" : "5"
 }

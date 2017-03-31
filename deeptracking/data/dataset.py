@@ -1,6 +1,9 @@
 import os
 import numpy as np
 import json
+import math
+import logging
+logger = logging.getLogger(__name__)
 
 from deeptracking.data.parallelminibatch import ParallelMinibatch
 from deeptracking.utils.transform import Transform
@@ -21,12 +24,46 @@ class Dataset(ParallelMinibatch):
         self.std = None
         self.data_augmentation = None
         self.minibatch_size = minibatch_size
-        #if self.normalize:
-        #    try:
-        #        self.mean = np.load(os.path.join(normalize_param_folder, "mean.npy"))
-        #        self.std = np.load(os.path.join(normalize_param_folder, "std.npy"))
-        #    except Exception:
-        #        raise IOError("Folder {} does not contain mean.npy and std.npy".format(normalize_param_folder))
+
+    def set_mean_std(self, path):
+        try:
+            self.mean = np.load(os.path.join(path, "mean.npy"))
+            self.std = np.load(os.path.join(path, "std.npy"))
+        except Exception:
+            logger.info("No mean/std file found in path {}".format(path))
+            max_size = 10000
+            indexes = self.compute_minibatches_permutations_()[:int(max_size/self.minibatch_size)]
+            logger.info("Computing Mean")
+            self.mean = self.compute_channels_mean(indexes)
+            logger.info("Computing Std")
+            self.std = self.compute_channels_std(indexes, self.mean)
+            logger.info("Saving mean and std")
+            np.save(os.path.join(path, "mean.npy"), self.mean)
+            np.save(os.path.join(path, "std.npy"), self.std)
+
+    def compute_channels_mean(self, batch_indexes):
+        # todo could be done in parallel
+        channel_means = np.zeros(8)
+        processed_images = 0
+        for index in batch_indexes:
+            image_buffer, _, _ = self.load_minibatch(index)
+            image_means = np.mean(image_buffer, axis=(2, 3))
+            channel_means += np.sum(image_means, axis=0)
+            processed_images += image_buffer.shape[0]
+        channel_means = channel_means / processed_images
+        return channel_means
+
+    def compute_channels_std(self, batch_indexes, channel_mean):
+        channel_std = np.zeros(8)
+        processed_images = 0
+        for index in batch_indexes:
+            image_buffer, _, _ = self.load_minibatch(index)
+            image_means = np.mean(image_buffer, axis=(2, 3))
+            channel_std += np.sum(np.square(image_means - channel_mean), axis=0)
+            processed_images += image_buffer.shape[0]
+        channel_std = np.sqrt(channel_std / processed_images)
+        return channel_std
+
 
     def add_pose(self, rgb, depth, pose):
         index = self.size()
@@ -84,6 +121,7 @@ class Dataset(ParallelMinibatch):
         self.metadata = data["metaData"]
 
         count = 0
+        # todo this is not clean!
         while True:
             try:
                 id = str(count)
@@ -97,7 +135,8 @@ class Dataset(ParallelMinibatch):
                 count += 1
 
             except KeyError:
-                return
+                break
+        self.set_mean_std(self.path)
 
     @staticmethod
     def insert_pose_in_dict(dict, key, item):
@@ -108,9 +147,6 @@ class Dataset(ParallelMinibatch):
 
     def size(self):
         return len(self.data_pose)
-
-    def get_valid_index(self):
-        return np.arange(0, self.size())
 
     def set_data_augmentation(self, data_augmentation):
         self.data_augmentation = data_augmentation
@@ -154,20 +190,25 @@ class Dataset(ParallelMinibatch):
         if self.data_augmentation is not None:
             rgbA, depthA = self.data_augmentation.augment(rgbA, depthA, poseA, real=False)
             rgbB, depthB = self.data_augmentation.augment(rgbB, depthB, poseB, real=True)
-        # normalize data
-        #image_buffer[buffer_index] = None
+        rgbA = rgbA.T
+        depthA = depthA.T
+        rgbB = rgbB.T
+        depthB = depthB.T
+        image_buffer[buffer_index, 0:3, :, :] = rgbA
+        image_buffer[buffer_index, 3, :, :] = depthA
+        image_buffer[buffer_index, 4:7, :, :] = rgbB
+        image_buffer[buffer_index, 7, :, :] = depthB
         prior_buffer[buffer_index] = poseA.to_parameters(isQuaternion=True)
         label_buffer[buffer_index] = poseB.to_parameters()
 
-    def get_permutations(self, minibatch_size):
-        permutations = np.random.permutation(self.get_valid_index())
-        return [permutations[x:x + minibatch_size] for x in range(0, len(permutations), minibatch_size)]
+    def get_batch_qty(self):
+        return math.ceil(self.size() / self.minibatch_size)
 
     """
         PARALLEL MINIBATCH METHODS
     """
     def compute_minibatches_permutations_(self):
-        permutations = np.random.permutation(self.get_valid_index())
+        permutations = np.random.permutation(np.arange(0, self.size()))
         return [permutations[x:x + self.minibatch_size] for x in range(0, len(permutations), self.minibatch_size)]
 
     def load_minibatch(self, task):

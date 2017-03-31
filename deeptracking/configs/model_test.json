@@ -8,9 +8,8 @@
     }
   ],
   "shader_path": "deeptracking/data/shaders",
-  "model_path": "/home/mathieu/Dataset/DeepTrack/Model/clock_v1",
+  "model_path": "train_test_nogit/test",
   "video_path": "/home/mathieu/Dataset/DeepTrack/Sequence/clock/seq_1",
-  "mean_std_path": "/home/mathieu/Dataset/DeepTrack/Model/mean_clock_real",
   "use_sensor": "True",
 
   "COMMENT": "Sensor only",

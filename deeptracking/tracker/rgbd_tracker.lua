@@ -5,7 +5,7 @@
 -- Description : All channels concatenation
 --
 
-require 'deeptracking.model.modelbase'
+require 'deeptracking.tracker.modelbase'
 
 local RGBDTracker = torch.class('RGBDTracker', 'ModelBase')
 
