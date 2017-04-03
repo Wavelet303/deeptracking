@@ -6,6 +6,7 @@ from deeptracking.data.dataset_utils import normalize_scale, normalize_channels,
 import PyTorchHelpers
 import numpy as np
 
+
 class DeepTracker(TrackerBase):
     def __init__(self, camera, object_width=0, model_3d_path="", model_3d_ao_path="", shader_path=""):
         self.image_size = None
@@ -42,7 +43,8 @@ class DeepTracker(TrackerBase):
         print(self.tracker_model.model_string())
 
     def load_parameters_from_model_(self):
-        self.image_size = (int(self.tracker_model.get_configs("input_size")), int(self.tracker_model.get_configs("input_size")))
+        self.image_size = (
+        int(self.tracker_model.get_configs("input_size")), int(self.tracker_model.get_configs("input_size")))
         self.translation_range = float(self.tracker_model.get_configs("translation_range"))
         self.rotation_range = float(self.tracker_model.get_configs("rotation_range"))
         self.input_buffer = np.ndarray((1, 8, self.image_size[0], self.image_size[1]), dtype=np.float32)
@@ -55,7 +57,7 @@ class DeepTracker(TrackerBase):
 
     def estimate_current_pose(self, previous_pose, current_rgb, current_depth, debug=False):
         render_rgb, render_depth = self.renderer.render(previous_pose.inverse().transpose())
-        #todo implement this part on gpu...
+        # todo implement this part on gpu...
         rgbA, depthA = normalize_scale(render_rgb, render_depth, previous_pose, self.camera, self.image_size,
                                        self.object_width)
         rgbB, depthB = normalize_scale(current_rgb, current_depth, previous_pose, self.camera, self.image_size,

@@ -3,7 +3,7 @@
       "rgb_noise": "2",
       "depth_noise": "2",
       "occluder_path": "",
-      "background_path": "",
+      "background_path": "/home/mathieu/Dataset/RGBD/SUN3D",
       "blur_noise": "5",
       "hue_noise": "0.05"
     },
