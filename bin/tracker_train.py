@@ -1,6 +1,7 @@
 import PyTorchHelpers
 
 from deeptracking.data.dataaugmentation import DataAugmentation
+from deeptracking.data.dataset_utils import show_frames_from_buffer
 from deeptracking.utils.argumentparser import ArgumentParser
 from deeptracking.data.dataset import Dataset
 import sys
@@ -135,6 +136,9 @@ def train_loop(model, dataset, logger, log_message_ratio=0.01):
         minibatchs = dataset.get_minibatch()
         for i, minibatch in enumerate(minibatchs):
             image_buffer, prior_buffer, label_buffer = minibatch
+            if args.verbose:
+                show_frames_from_buffer(image_buffer, dataset.mean, dataset.std)
+
             losses = model.train([image_buffer, prior_buffer], label_buffer)
             statistics = model.extract_grad_statistic()
             logger.add_row("Minibatch", [losses["label"]])

@@ -1,11 +1,11 @@
 import numpy as np
-import json
-import os
 import math
 from deeptracking.utils.transform import Transform
 from scipy.misc import imresize
+
 try:
     import cv2
+    import matplotlib.pyplot as plt
 except ImportError:
     pass
 
@@ -91,8 +91,8 @@ def load_label(header, label_tensor):
             pose = load_pose(header, str(id))
             label = np.array(pose.to_parameters(isQuaternion=False))
             normalize_label(label,
-                                             float(header["metaData"]["translation_range"]),
-                                             float(header["metaData"]["rotation_range"]))
+                            float(header["metaData"]["translation_range"]),
+                            float(header["metaData"]["rotation_range"]))
             label_tensor[i * pair_size + j, :] = label
 
 
@@ -224,20 +224,48 @@ def normalize_channels(rgb, depth, mean, std):
     :param type:
     :return:
     """
+    rgb = rgb.astype(np.float32)
+    rgb -= mean[np.newaxis, np.newaxis, :3]
+    rgb /= std[np.newaxis, np.newaxis, :3]
+    depth = depth.astype(np.float32)
+    depth -= mean[np.newaxis, np.newaxis, 3]
+    depth /= std[np.newaxis, np.newaxis, 3]
+    return rgb.T, depth.T
+
+def unormalize_channels(rgb, depth, mean, std):
     rgb = rgb.T
     depth = depth.T
-    rgb = rgb.astype(np.float32)
-    rgb -= mean[:3, np.newaxis, np.newaxis]
-    rgb /= std[:3, np.newaxis, np.newaxis]
-    depth = depth.astype(np.float32)
-    depth -= mean[3, np.newaxis, np.newaxis]
-    depth /= std[3, np.newaxis, np.newaxis]
-    return rgb, depth
+    rgb *= std[np.newaxis, np.newaxis, :3]
+    rgb += mean[np.newaxis, np.newaxis, :3]
+    depth *= std[np.newaxis, np.newaxis, 3]
+    depth += mean[np.newaxis, np.newaxis, 3]
+    return rgb.astype(np.uint8), depth
+
+
+def show_frames(rgbA, depthA, rgbB, depthB):
+    fig, axis = plt.subplots(2, 2)
+    ax1, ax2 = axis[0, :]
+    ax3, ax4 = axis[1, :]
+    ax1.imshow(rgbA)
+    ax2.imshow(rgbB)
+    ax3.imshow(depthA)
+    ax4.imshow(depthB)
+    plt.show()
+
+
+def show_frames_from_buffer(image_buffer, mean, std):
+    rgbA = image_buffer[0, 0:3, :, :]
+    depthA = image_buffer[0, 3, :, :]
+    rgbB = image_buffer[0, 4:7, :, :]
+    depthB = image_buffer[0, 7, :, :]
+    rgbA, depthA = unormalize_channels(rgbA, depthA, mean[:4], std[:4])
+    rgbB, depthB = unormalize_channels(rgbB, depthB, mean[4:], std[4:])
+    show_frames(rgbA, depthA, rgbB, depthB)
 
 
 def normalize_depth(depth, pose):
     depth = depth.astype(np.float32)
     zero_mask = depth == 0
     depth += pose.matrix[2, 3] * 1000
-    depth[zero_mask] = -5000
+    depth[zero_mask] = 5000
     return depth

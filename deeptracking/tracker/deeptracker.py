@@ -1,11 +1,10 @@
 from deeptracking.tracker.trackerbase import TrackerBase
 from deeptracking.utils.transform import Transform
-from deeptracking.data.dataset_utils import combine_view_transform, normalize_depth
+from deeptracking.data.dataset_utils import combine_view_transform, normalize_depth, show_frames
 from deeptracking.data.modelrenderer import ModelRenderer, InitOpenGL
 from deeptracking.data.dataset_utils import normalize_scale, normalize_channels, unnormalize_label, image_blend
 import PyTorchHelpers
 import numpy as np
-import matplotlib.pyplot as plt
 
 class DeepTracker(TrackerBase):
     def __init__(self, camera, object_width=0, model_3d_path="", model_3d_ao_path="", shader_path=""):
@@ -66,14 +65,7 @@ class DeepTracker(TrackerBase):
         depthB = normalize_depth(depthB, previous_pose.inverse())
 
         if debug:
-            fig, axis = plt.subplots(2, 2)
-            ax1, ax2 = axis[0, :]
-            ax3, ax4 = axis[1, :]
-            ax1.imshow(rgbA)
-            ax2.imshow(rgbB)
-            ax3.imshow(depthA)
-            ax4.imshow(depthB)
-            plt.show()
+            show_frames(rgbA, depthA, rgbB, depthB)
 
         rgbA, depthA = normalize_channels(rgbA, depthA, self.mean[:4], self.std[:4])
         rgbB, depthB = normalize_channels(rgbB, depthB, self.mean[4:], self.std[4:])

@@ -6,6 +6,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 from deeptracking.data.parallelminibatch import ParallelMinibatch
+from deeptracking.data.dataset_utils import normalize_channels, normalize_depth
 from deeptracking.utils.transform import Transform
 from deeptracking.utils.camera import Camera
 from deeptracking.data.frame import Frame
@@ -190,10 +191,12 @@ class Dataset(ParallelMinibatch):
         if self.data_augmentation is not None:
             rgbA, depthA = self.data_augmentation.augment(rgbA, depthA, poseA, real=False)
             rgbB, depthB = self.data_augmentation.augment(rgbB, depthB, poseB, real=True)
-        rgbA = rgbA.T
-        depthA = depthA.T
-        rgbB = rgbB.T
-        depthB = depthB.T
+
+        depthA = normalize_depth(depthA, poseA)
+        depthB = normalize_depth(depthB, poseA)
+        rgbA, depthA = normalize_channels(rgbA, depthA, self.mean[:4], self.std[:4])
+        rgbB, depthB = normalize_channels(rgbB, depthB, self.mean[4:], self.std[4:])
+
         image_buffer[buffer_index, 0:3, :, :] = rgbA
         image_buffer[buffer_index, 3, :, :] = depthA
         image_buffer[buffer_index, 4:7, :, :] = rgbB
