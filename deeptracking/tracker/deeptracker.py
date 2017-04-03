@@ -5,8 +5,7 @@ from deeptracking.data.modelrenderer import ModelRenderer, InitOpenGL
 from deeptracking.data.dataset_utils import normalize_scale, normalize_channels, unnormalize_label, image_blend
 import PyTorchHelpers
 import numpy as np
-import os
-
+import matplotlib.pyplot as plt
 
 class DeepTracker(TrackerBase):
     def __init__(self, camera, object_width=0, model_3d_path="", model_3d_ao_path="", shader_path=""):
@@ -55,7 +54,7 @@ class DeepTracker(TrackerBase):
     def set_configs_(self, configs):
         self.tracker_model.set_configs(configs)
 
-    def estimate_current_pose(self, previous_pose, current_rgb, current_depth):
+    def estimate_current_pose(self, previous_pose, current_rgb, current_depth, debug=False):
         render_rgb, render_depth = self.renderer.render(previous_pose.inverse().transpose())
         #todo implement this part on gpu...
         rgbA, depthA = normalize_scale(render_rgb, render_depth, previous_pose, self.camera, self.image_size,
@@ -65,6 +64,16 @@ class DeepTracker(TrackerBase):
 
         depthA = normalize_depth(depthA, previous_pose.inverse())
         depthB = normalize_depth(depthB, previous_pose.inverse())
+
+        if debug:
+            fig, axis = plt.subplots(2, 2)
+            ax1, ax2 = axis[0, :]
+            ax3, ax4 = axis[1, :]
+            ax1.imshow(rgbA)
+            ax2.imshow(rgbB)
+            ax3.imshow(depthA)
+            ax4.imshow(depthB)
+            plt.show()
 
         rgbA, depthA = normalize_channels(rgbA, depthA, self.mean[:4], self.std[:4])
         rgbB, depthB = normalize_channels(rgbB, depthB, self.mean[4:], self.std[4:])

@@ -236,7 +236,8 @@ def normalize_channels(rgb, depth, mean, std):
 
 
 def normalize_depth(depth, pose):
+    depth = depth.astype(np.float32)
     zero_mask = depth == 0
     depth += pose.matrix[2, 3] * 1000
-    depth[zero_mask] = 0
+    depth[zero_mask] = -5000
     return depth

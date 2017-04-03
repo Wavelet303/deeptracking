@@ -45,7 +45,8 @@ if __name__ == '__main__':
             print("Error Loading video data...")
             sys.exit(-1)
         frame_download_path = video_data.path
-        gen = lambda alist: [(yield i) for i in alist]  #simply make the list a generator for compatibility with sensor's generator
+        # Makes the list a generator for compatibility with sensor's generator
+        gen = lambda alist: [(yield i) for i in alist]
         frame_generator = gen(video_data.data_pose)
         camera = video_data.camera
 
@@ -60,32 +61,27 @@ if __name__ == '__main__':
     previous_frame, previous_pose = next(frame_generator)
     previous_rgb, previous_depth = previous_frame.get_rgb_depth(frame_download_path)
     previous_pose = previous_pose.inverse()
-    use_ground_truth_pose = False
+    use_ground_truth_pose = True
 
     for current_frame, current_pose in frame_generator:
         # get actual frame
         current_rgb, current_depth = current_frame.get_rgb_depth(frame_download_path)
+        screen = current_rgb
 
-        start_time = time.time()
         if use_ground_truth_pose:
             previous_pose = current_pose.inverse()
-            if args.verbose:
-                if previous_pose is not None:
-                    rgb, depth = tracker.renderer.render(previous_pose.inverse().transpose())
-                    screen = image_blend(rgb, current_rgb)
-                else:
-                    screen = current_rgb
-                cv2.imshow("Debug", screen[:, :, ::-1])
+            if previous_pose is not None:
+                rgb, depth = tracker.renderer.render(previous_pose.inverse().transpose())
+                screen = image_blend(rgb, current_rgb)
         else:
             # process pose estimation of current frame given last pose
-            previous_pose = tracker.estimate_current_pose(previous_pose, current_rgb, current_depth)
-            if args.verbose:
-                screen = tracker.get_debug_screen(previous_rgb)
-                cv2.imshow("Debug", screen[:, :, ::-1])
-        print("Estimation processing time : {}".format(time.time() - start_time))
+            start_time = time.time()
+            previous_pose = tracker.estimate_current_pose(previous_pose, current_rgb, current_depth, debug=args.verbose)
+            print("Estimation processing time : {}".format(time.time() - start_time))
+            screen = tracker.get_debug_screen(previous_rgb)
         previous_rgb = current_rgb
-
-        key = cv2.waitKey()
+        cv2.imshow("Debug", screen[:, :, ::-1])
+        key = cv2.waitKey(1)
         key_chr = chr(key & 255)
         if key != -1:
             print("pressed key id : {}, char : [{}]".format(key, key_chr))
@@ -93,4 +89,4 @@ if __name__ == '__main__':
             break
         elif key_chr == ' ':
             use_ground_truth_pose = not use_ground_truth_pose
-
+            frame_generator.compute_detection(use_ground_truth_pose)
