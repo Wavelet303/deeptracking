@@ -2,7 +2,7 @@ from deeptracking.utils.argumentparser import ArgumentParser
 from deeptracking.utils.camera import Camera
 from deeptracking.utils.transform import Transform
 from deeptracking.data.dataset import Dataset
-from deeptracking.data.dataset_utils import combine_view_transform
+from deeptracking.data.dataset_utils import combine_view_transform, show_frames
 from deeptracking.data.modelrenderer import ModelRenderer, InitOpenGL
 from deeptracking.data.dataset_utils import normalize_scale
 from deeptracking.utils.uniform_sphere_sampler import UniformSphereSampler
@@ -10,6 +10,8 @@ import sys
 import json
 import os
 import math
+import cv2
+ESCAPE_KEY = 1048603
 
 
 if __name__ == '__main__':
@@ -53,14 +55,17 @@ if __name__ == '__main__':
     dataset.camera = camera
     window = InitOpenGL(camera.width, camera.height)
     sphere_sampler = UniformSphereSampler(SPHERE_MIN_RADIUS, SPHERE_MAX_RADIUS)
+    preload_count = 0
     if PRELOAD:
-        dataset.load()
+        if dataset.load(viewpoint_file_only=True):
+            preload_count = dataset.size()
+            print("This Dataset already contains {} samples".format(preload_count))
     # Iterate over all models from config files
     for model in MODELS:
         vpRender = ModelRenderer(model["model_path"], SHADER_PATH, dataset.camera, window)
         vpRender.load_ambiant_occlusion_map(model["ambiant_occlusion_model"])
         OBJECT_WIDTH = int(model["object_width"])
-        for i in range(SAMPLE_QUANTITY):
+        for i in range(SAMPLE_QUANTITY - preload_count):
             random_pose = sphere_sampler.get_random()
             random_transform = Transform.random((-TRANSLATION_RANGE, TRANSLATION_RANGE),
                                                 (-ROTATION_RANGE, ROTATION_RANGE))
@@ -74,19 +79,17 @@ if __name__ == '__main__':
             index = dataset.add_pose(rgbA, depthA, random_pose)
             dataset.add_pair(rgbB, depthB, random_transform, index)
 
-            sys.stdout.write("Progress: %d%%   \r" % (int(i / SAMPLE_QUANTITY * 100)))
+            sys.stdout.write("Progress: %d%%   \r" % (int((i + preload_count) / SAMPLE_QUANTITY * 100)))
             sys.stdout.flush()
 
             if i % 50 == 0:
-                dataset.dump_on_disk()
+                dataset.dump_on_disk(metadata)
 
             if args.verbose:
-                import cv2
-                cv2.imshow("testA", rgbA[:, :, ::-1])
-                cv2.imshow("testB", rgbB[:, :, ::-1])
-                #import matplotlib.pyplot as plt
-                #plt.imshow(depthA)
-                #plt.show()
-                cv2.waitKey()
+                show_frames(rgbA, depthA, rgbB, depthB)
+            cv2.imshow("testB", rgbB[:, :, ::-1])
+            k = cv2.waitKey(1)
+            if k == ESCAPE_KEY:
+                break
 
     dataset.dump_on_disk(metadata)

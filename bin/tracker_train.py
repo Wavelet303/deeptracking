@@ -12,6 +12,7 @@ import numpy as np
 import math
 from datetime import datetime
 import os
+import time
 
 from deeptracking.utils.data_logger import DataLogger
 from deeptracking.utils.slack_logger import SlackLogger
@@ -91,10 +92,14 @@ def config_datasets(data):
     data_augmentation.set_hue_noise(hue_noise)
 
     train_dataset = Dataset(train_path, minibatch_size=minibatch_size)
-    train_dataset.load()
+    if not train_dataset.load():
+        message_logger.error("Train dataset empty")
+        sys.exit(-1)
     train_dataset.set_data_augmentation(data_augmentation)
     valid_dataset = Dataset(valid_path, minibatch_size=minibatch_size)
-    valid_dataset.load()
+    if not valid_dataset.load():
+        message_logger.error("Valid dataset empty")
+        sys.exit(-1)
     valid_dataset.set_data_augmentation(data_augmentation)
     return train_dataset, valid_dataset
 
@@ -134,6 +139,7 @@ def train_loop(model, dataset, logger, log_message_ratio=0.01):
     with dataset:
         batch_message_intervals = math.ceil(float(dataset.get_batch_qty()) * log_message_ratio)
         minibatchs = dataset.get_minibatch()
+        start_time = time.time()
         for i, minibatch in enumerate(minibatchs):
             image_buffer, prior_buffer, label_buffer = minibatch
             if args.verbose:
@@ -145,7 +151,10 @@ def train_loop(model, dataset, logger, log_message_ratio=0.01):
             logger.add_row_from_dict("Grad_Rotation", statistics[1])
             logger.add_row_from_dict("Grad_Translation", statistics[2])
             if i % batch_message_intervals == 0:
-                message_logger.info("[{}%] : Train loss: {}".format(int(float(i)/float(dataset.get_batch_qty())*100), losses["label"]))
+                progression = float(i+1)/float(dataset.get_batch_qty())*100
+                message_logger.info("[{}%] : Train loss: {}".format(int(progression), losses["label"]))
+                elapsed_time = time.time() - start_time
+                message_logger.info("Time/batch : {}".format(100 * elapsed_time / progression))
 
     total_loss = data_logger.get_as_numpy("Minibatch")[:, 0]
     mean_loss = 0 if len(total_loss) < 5 else np.mean(total_loss[-5:])

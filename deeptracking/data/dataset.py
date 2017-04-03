@@ -108,18 +108,18 @@ class Dataset(ParallelMinibatch):
             json.dump(viewpoints_data, outfile)
         self.camera.save(self.path)
 
-    def load(self):
+    def load(self, viewpoint_file_only=False):
         """
         Load a viewpoints.json to dataset's structure
         Todo: datastructure should be more similar to json structure...
-        :return:
+        :return: return false if the dataset is empty.
         """
         # Load viewpoints file and camera file
-        with open(os.path.join(self.path, "viewpoints.json")) as data_file:
-            data = json.load(data_file)
-        self.camera = Camera.load_from_json(self.path)
-        self.metadata = data["metaData"]
-
+        try:
+            with open(os.path.join(self.path, "viewpoints.json")) as data_file:
+                data = json.load(data_file)
+        except FileNotFoundError:
+            return False
         count = 0
         # todo this is not clean!
         while True:
@@ -136,7 +136,11 @@ class Dataset(ParallelMinibatch):
 
             except KeyError:
                 break
-        self.set_mean_std(self.path)
+        if not viewpoint_file_only:
+            self.camera = Camera.load_from_json(self.path)
+            self.metadata = data["metaData"]
+            self.set_mean_std(self.path)
+        return True
 
     @staticmethod
     def insert_pose_in_dict(dict, key, item):
