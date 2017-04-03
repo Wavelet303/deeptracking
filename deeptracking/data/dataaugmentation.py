@@ -52,9 +52,16 @@ class DataAugmentation:
         ret_depth = depth
 
         if real and self.occluder:
-            if random.uniform(0, 1) < 0.6:
-                rand_id = random.randint(0, self.occluder.size())
+            if random.uniform(0, 1) < 1:
+                rand_id = random.randint(0, self.occluder.size() - 1)
                 occluder_rgb, occluder_depth, pose = self.occluder.load_image(rand_id)
+                if random.randint(0, 1):
+                    occluder_rgb, occluder_depth, _ = self.occluder.load_pair(rand_id, 0)
+                occluder_depth = occluder_depth.astype(np.float32)
+                # Z offset of occluder to be closer to the occluded object ( with random distance in front of the object)
+                offset = pose.matrix[2, 3] - prior.matrix[2, 3] + random.uniform(-0.07, -0.01)
+                occluder_depth += offset * 1000
+
                 occluder_rgb = self.add_hue_noise(occluder_rgb, 1)
                 occluder_rgb = imresize(occluder_rgb, ret_depth.shape, interp='nearest')
                 occluder_depth = imresize(occluder_depth, ret_depth.shape, interp='nearest', mode="F").astype(np.int16)

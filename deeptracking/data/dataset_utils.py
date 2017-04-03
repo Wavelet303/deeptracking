@@ -143,8 +143,8 @@ def normalize_scale(color, depth, pose, camera, output_size=(100, 100), scale_si
     depth_crop = depth[pixels[0, 0]:pixels[1, 0], pixels[0, 1]:pixels[2, 1]].astype(np.float)
     mask_depth = imresize(depth_crop, output_size, interp='nearest', mode="F") != 0
     mask_rgb = imresize(color_crop, output_size, interp='nearest') != 0
-    resized_color_crop = imresize(color_crop, output_size, interp='bilinear')
-    resized_depth_crop = imresize(depth_crop, output_size, interp='bilinear', mode="F").astype(np.int16)
+    resized_color_crop = imresize(color_crop, output_size, interp='nearest')
+    resized_depth_crop = imresize(depth_crop, output_size, interp='nearest', mode="F").astype(np.int16)
     return resized_color_crop * mask_rgb, resized_depth_crop * mask_depth
 
 
@@ -174,8 +174,8 @@ def cv_normalize_scale(color, depth, pose, camera, output_size=(100, 100), scale
     depth_crop = depth[pixels[0, 0]:pixels[1, 0], pixels[0, 1]:pixels[2, 1]].astype(np.float)
     mask_depth = cv2.resize(depth_crop, output_size, interpolation=cv2.INTER_NEAREST) != 0
     mask_rgb = cv2.resize(color_crop, output_size, interpolation=cv2.INTER_NEAREST) != 0
-    resized_depth_crop = cv2.resize(depth_crop, output_size, interpolation=cv2.INTER_LINEAR)
-    resized_color_crop = cv2.resize(color_crop, output_size, interpolation=cv2.INTER_LINEAR)
+    resized_depth_crop = cv2.resize(depth_crop, output_size, interpolation=cv2.INTER_NEAREST)
+    resized_color_crop = cv2.resize(color_crop, output_size, interpolation=cv2.INTER_NEAREST)
     return resized_color_crop * mask_rgb, resized_depth_crop * mask_depth
 
 

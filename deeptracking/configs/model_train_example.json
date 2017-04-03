@@ -2,9 +2,9 @@
   "data_augmentation":{
       "rgb_noise": "2",
       "depth_noise": "2",
-      "occluder_path": "",
-      "background_path": "/home/mathieu/Dataset/RGBD/SUN3D",
-      "blur_noise": "5",
+      "occluder_path": "path/to/occluder/dataset",
+      "background_path": "path/to/background/dataset",
+      "blur_noise": "7",
       "hue_noise": "0.05"
     },
 
@@ -24,9 +24,9 @@
   },
 
   "session_name": "test",
-  "train_path": "synthetic_dataset_test_nogit",
-  "valid_path": "synthetic_dataset_test_nogit",
-  "output_path": "train_test_nogit",
+  "train_path": "/path/to/train/dataset",
+  "valid_path": "/path/to/test/dataset",
+  "output_path": "/path/to/output",
   "minibatch_size": "5",
   "max_epoch": "20",
   "early_stop_wait_limit" : "5"

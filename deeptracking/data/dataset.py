@@ -65,7 +65,6 @@ class Dataset(ParallelMinibatch):
         channel_std = np.sqrt(channel_std / processed_images)
         return channel_std
 
-
     def add_pose(self, rgb, depth, pose):
         index = self.size()
         frame = self.frame_class(rgb, depth, str(index))
@@ -131,8 +130,8 @@ class Dataset(ParallelMinibatch):
                 if "pairs" in data[id]:
                     for i in range(int(data[id]["pairs"])):
                         pair_id = "{}n{}".format(id, i)
-                        pose = Transform.from_parameters(*[float(data[pair_id]["vector"][str(x)]) for x in range(6)])
-                        self.add_pair(None, None, pose, count)
+                        pair_pose = Transform.from_parameters(*[float(data[pair_id]["vector"][str(x)]) for x in range(6)])
+                        self.add_pair(None, None, pair_pose, count)
                 count += 1
 
             except KeyError:
@@ -152,22 +151,6 @@ class Dataset(ParallelMinibatch):
     def set_data_augmentation(self, data_augmentation):
         self.data_augmentation = data_augmentation
 
-    def unnormalize_image(self, rgb, depth, type):
-        if type == 'viewpoint':
-            mean = self.mean[:4]
-            std = self.std[:4]
-        else:
-            mean = self.mean[4:]
-            std = self.std[4:]
-
-        rgb *= std[:3, np.newaxis, np.newaxis]
-        rgb += mean[:3, np.newaxis, np.newaxis]
-        rgb = rgb.astype(np.uint8)
-        depth *= std[3, np.newaxis, np.newaxis]
-        depth += mean[3, np.newaxis, np.newaxis]
-        depth = depth.astype(np.uint16)
-        return rgb.T, depth.T
-
     def get_image_pair(self, index):
         frame, pose = self.data_pose[index]
         frame_pair, pose_pair = self.data_pair[index][0]
@@ -186,23 +169,27 @@ class Dataset(ParallelMinibatch):
         return rgb, depth, pose
 
     def get_sample(self, index, image_buffer, prior_buffer, label_buffer, buffer_index):
-        rgbA, depthA, poseA = self.load_image(index)
-        rgbB, depthB, poseB = self.load_pair(index, 0)
+        rgbA, depthA, initial_pose = self.load_image(index)
+        rgbB, depthB, transformed_pose = self.load_pair(index, 0)
         if self.data_augmentation is not None:
-            rgbA, depthA = self.data_augmentation.augment(rgbA, depthA, poseA, real=False)
-            rgbB, depthB = self.data_augmentation.augment(rgbB, depthB, poseB, real=True)
+            rgbA, depthA = self.data_augmentation.augment(rgbA, depthA, initial_pose, real=False)
+            rgbB, depthB = self.data_augmentation.augment(rgbB, depthB, initial_pose, real=True)
 
-        depthA = normalize_depth(depthA, poseA)
-        depthB = normalize_depth(depthB, poseA)
-        rgbA, depthA = normalize_channels(rgbA, depthA, self.mean[:4], self.std[:4])
-        rgbB, depthB = normalize_channels(rgbB, depthB, self.mean[4:], self.std[4:])
+        depthA = normalize_depth(depthA, initial_pose)
+        depthB = normalize_depth(depthB, initial_pose)
+        if self.mean is None or self.std is None:
+            rgbA, rgbB = rgbA.T, rgbB.T
+            depthA, depthB = depthA.T, depthB.T
+        else:
+            rgbA, depthA = normalize_channels(rgbA, depthA, self.mean[:4], self.std[:4])
+            rgbB, depthB = normalize_channels(rgbB, depthB, self.mean[4:], self.std[4:])
 
         image_buffer[buffer_index, 0:3, :, :] = rgbA
         image_buffer[buffer_index, 3, :, :] = depthA
         image_buffer[buffer_index, 4:7, :, :] = rgbB
         image_buffer[buffer_index, 7, :, :] = depthB
-        prior_buffer[buffer_index] = poseA.to_parameters(isQuaternion=True)
-        label_buffer[buffer_index] = poseB.to_parameters()
+        prior_buffer[buffer_index] = initial_pose.to_parameters(isQuaternion=True)
+        label_buffer[buffer_index] = transformed_pose.to_parameters()
 
     def get_batch_qty(self):
         return math.ceil(self.size() / self.minibatch_size)

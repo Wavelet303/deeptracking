@@ -1,15 +1,15 @@
 {
   "models": [
     {
-      "name": "clock",
-      "model_path": "/home/mathieu/Dataset/3D_models/clock/clock.ply",
-      "ambiant_occlusion_model": "/home/mathieu/Dataset/3D_models/clock/clock_ao.ply",
+      "name": "model_name",
+      "model_path": "path/to/ply",
+      "ambiant_occlusion_model": "path/to/aoply",
       "object_width": "250"
     }
   ],
   "shader_path": "deeptracking/data/shaders",
-  "model_path": "train_test_nogit/test",
-  "video_path": "/home/mathieu/Dataset/DeepTrack/Sequence/clock/seq_1",
+  "model_path": "path/to/model",
+  "video_path": "path/to/video/input",
   "use_sensor": "True",
 
   "COMMENT": "Sensor only",
