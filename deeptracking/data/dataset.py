@@ -108,7 +108,7 @@ class Dataset(ParallelMinibatch):
             json.dump(viewpoints_data, outfile)
         self.camera.save(self.path)
 
-    def load(self, viewpoint_file_only=False):
+    def load(self, viewpoint_file_only=False, load_mean_std=True):
         """
         Load a viewpoints.json to dataset's structure
         Todo: datastructure should be more similar to json structure...
@@ -139,7 +139,8 @@ class Dataset(ParallelMinibatch):
         if not viewpoint_file_only:
             self.camera = Camera.load_from_json(self.path)
             self.metadata = data["metaData"]
-            self.set_mean_std(self.path)
+            if load_mean_std:
+                self.set_mean_std(self.path)
         return True
 
     @staticmethod

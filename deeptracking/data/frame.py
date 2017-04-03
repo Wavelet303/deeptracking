@@ -22,6 +22,10 @@ class Frame:
     def is_on_disk(self):
         return self.rgb is None and self.depth is None
 
+    def exists(self, path):
+        return os.path.exists(os.path.join(path, '{}.png').format(self.id)) and \
+               os.path.exists(os.path.join(path, '{}d.png').format(self.id))
+
     def get_rgb_depth(self, path, keep_in_ram=False):
         """
         getter to images, if keep in ram is false, the reference wont be kept by this object

@@ -1,0 +1,23 @@
+from deeptracking.data.dataset import Dataset
+import sys
+
+
+if __name__ == '__main__':
+    dataset_path = "/home/mathieu/Dataset/DeepTrack/skull"
+
+    dataset = Dataset(dataset_path)
+    if not dataset.load(load_mean_std=False):
+        print("[Error]: Train dataset empty")
+        sys.exit(-1)
+
+    # check if all viewpoints are there
+    for i, (frame, pose) in enumerate(dataset.data_pose):
+        if not frame.exists(dataset.path):
+            print("[Error]: Missing pose frame {}".format(frame.id))
+            sys.exit(-1)
+
+    # check if all pairs are there
+    for key, value in dataset.data_pair.items():
+        for frame, pose in value:
+            if not frame.exists(dataset.path):
+                print("[Error]: Missing pair frame {}".format(frame.id))
