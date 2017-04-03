@@ -37,6 +37,17 @@ if __name__ == '__main__':
     if not os.path.exists(OUTPUT_PATH):
         os.mkdir(OUTPUT_PATH)
 
+    # Write important misc data to file
+    metadata = {}
+    metadata["translation_range"] = str(TRANSLATION_RANGE)
+    metadata["rotation_range"] = str(ROTATION_RANGE)
+    metadata["image_size"] = str(IMAGE_SIZE[0])
+    metadata["object_width"] = {}
+    for model in MODELS:
+        metadata["object_width"][model["name"]] = str(model["object_width"])
+    metadata["min_radius"] = str(SPHERE_MIN_RADIUS)
+    metadata["max_radius"] = str(SPHERE_MAX_RADIUS)
+
     camera = Camera.load_from_json(data["camera_path"])
     dataset = Dataset(OUTPUT_PATH)
     dataset.camera = camera
@@ -66,6 +77,9 @@ if __name__ == '__main__':
             sys.stdout.write("Progress: %d%%   \r" % (int(i / SAMPLE_QUANTITY * 100)))
             sys.stdout.flush()
 
+            if i % 50 == 0:
+                dataset.dump_on_disk()
+
             if args.verbose:
                 import cv2
                 cv2.imshow("testA", rgbA[:, :, ::-1])
@@ -74,16 +88,5 @@ if __name__ == '__main__':
                 #plt.imshow(depthA)
                 #plt.show()
                 cv2.waitKey()
-
-    # Write important misc data to file
-    metadata = {}
-    metadata["translation_range"] = str(TRANSLATION_RANGE)
-    metadata["rotation_range"] = str(ROTATION_RANGE)
-    metadata["image_size"] = str(IMAGE_SIZE[0])
-    metadata["object_width"] = {}
-    for model in MODELS:
-        metadata["object_width"][model["name"]] = str(model["object_width"])
-    metadata["min_radius"] = str(SPHERE_MIN_RADIUS)
-    metadata["max_radius"] = str(SPHERE_MAX_RADIUS)
 
     dataset.dump_on_disk(metadata)
