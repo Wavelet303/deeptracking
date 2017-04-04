@@ -8,6 +8,10 @@ class ViewpointGenerator:
         self.detector = detector
         self.count = 0
         self.do_compute = True
+        self.sensor.start()
+
+    def __del__(self):
+        self.sensor.stop()
 
     def compute_detection(self, do_compute):
         self.do_compute = do_compute

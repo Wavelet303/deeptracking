@@ -28,6 +28,19 @@ def unnormalize_label(params, max_translation, max_rotation_rad):
     return params
 
 
+def angle_distance(unit1, unit2):
+    phi = abs(unit2 - unit1) % 360
+    sign = 1
+    # used to calculate sign
+    if not ((0 <= unit1 - unit2 <= 180) or (-180 >= unit1 - unit2 >= -360)):
+        sign = -1
+    if phi > 180:
+        result = 360 - phi
+    else:
+        result = phi
+    return result * sign
+
+
 def combine_view_transform(vp, view_transform):
     """
     combines a camera space transform with a camera axis dependent transform.
