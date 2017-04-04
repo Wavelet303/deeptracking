@@ -68,7 +68,7 @@ class FrameNumpy(Frame):
             self.clear_image()
 
     def load(self, path):
-        frame = np.load(os.path.join("{}.npy".format(path), self.id))
+        frame = np.load(os.path.join(path, "{}.npy".format(self.id)))
         self.depth = self.numpy_uint8_to_int16(frame[:, :, 3:])
         self.rgb = frame[:, :, 0:3]
 
