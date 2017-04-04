@@ -9,22 +9,29 @@ from deeptracking.data.parallelminibatch import ParallelMinibatch
 from deeptracking.data.dataset_utils import normalize_channels, normalize_depth
 from deeptracking.utils.transform import Transform
 from deeptracking.utils.camera import Camera
-from deeptracking.data.frame import Frame
+from deeptracking.data.frame import Frame, FrameNumpy
 
 
 class Dataset(ParallelMinibatch):
-    def __init__(self, folder_path, frame_class=Frame, minibatch_size=64, max_parallel_buffer_size=0):
+    def __init__(self, folder_path, frame_class="numpy", minibatch_size=64, max_parallel_buffer_size=0):
         ParallelMinibatch.__init__(self, max_parallel_buffer_size)
         self.path = folder_path
         self.data_pose = []
         self.data_pair = {}
         self.metadata = {}
         self.camera = None
-        self.frame_class = frame_class
+        self.frame_class = Frame
+        self.set_save_type(frame_class)
         self.mean = None
         self.std = None
         self.data_augmentation = None
         self.minibatch_size = minibatch_size
+
+    def set_save_type(self, frame_class):
+        if frame_class == "numpy":
+            self.frame_class = FrameNumpy
+        else:
+            self.frame_class = Frame
 
     def set_mean_std(self, path):
         try:
@@ -87,11 +94,18 @@ class Dataset(ParallelMinibatch):
             frame = self.frame_class(rgb, depth, "{}n0".format(id))
             self.data_pair[id] = [(frame, pose)]
 
-    def dump_on_disk(self, metadata={}):
+    def dump_images_on_disk(self):
         """
         Unload all images data from ram and save them to the dataset's path ( can be reloaded with load_from_disk())
         :return:
         """
+        for frame, pose in self.data_pose:
+            if int(frame.id) in self.data_pair:
+                for pair_frame, pair_pose in self.data_pair[int(frame.id)]:
+                    pair_frame.dump(self.path)
+            frame.dump(self.path)
+
+    def save_json_files(self, metadata):
         viewpoints_data = {}
         for frame, pose in self.data_pose:
             self.insert_pose_in_dict(viewpoints_data, frame.id, pose)
@@ -99,10 +113,8 @@ class Dataset(ParallelMinibatch):
                 viewpoints_data[frame.id]["pairs"] = len(self.data_pair[int(frame.id)])
                 for pair_frame, pair_pose in self.data_pair[int(frame.id)]:
                     self.insert_pose_in_dict(viewpoints_data, pair_frame.id, pair_pose)
-                    pair_frame.dump(self.path)
             else:
                 viewpoints_data[frame.id]["pairs"] = 0
-            frame.dump(self.path)
         viewpoints_data["metaData"] = metadata
         with open(os.path.join(self.path, "viewpoints.json"), 'w') as outfile:
             json.dump(viewpoints_data, outfile)
@@ -139,6 +151,7 @@ class Dataset(ParallelMinibatch):
         if not viewpoint_file_only:
             self.camera = Camera.load_from_json(self.path)
             self.metadata = data["metaData"]
+            self.set_save_type(self.metadata["save_type"])
             if load_mean_std:
                 self.set_mean_std(self.path)
         return True

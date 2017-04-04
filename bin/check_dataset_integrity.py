@@ -11,7 +11,7 @@ if __name__ == '__main__':
         sys.exit(-1)
 
     # check if all viewpoints are there
-    for i, (frame, pose) in enumerate(dataset.data_pose):
+    for frame, pose in dataset.data_pose:
         if not frame.exists(dataset.path):
             print("[Error]: Missing pose frame {}".format(frame.id))
             sys.exit(-1)

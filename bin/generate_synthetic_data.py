@@ -44,6 +44,7 @@ if __name__ == '__main__':
     metadata["translation_range"] = str(TRANSLATION_RANGE)
     metadata["rotation_range"] = str(ROTATION_RANGE)
     metadata["image_size"] = str(IMAGE_SIZE[0])
+    metadata["save_type"] = data["save_type"]
     metadata["object_width"] = {}
     for model in MODELS:
         metadata["object_width"][model["name"]] = str(model["object_width"])
@@ -51,7 +52,7 @@ if __name__ == '__main__':
     metadata["max_radius"] = str(SPHERE_MAX_RADIUS)
 
     camera = Camera.load_from_json(data["camera_path"])
-    dataset = Dataset(OUTPUT_PATH)
+    dataset = Dataset(OUTPUT_PATH, frame_class=data["save_type"])
     dataset.camera = camera
     window = InitOpenGL(camera.width, camera.height)
     sphere_sampler = UniformSphereSampler(SPHERE_MIN_RADIUS, SPHERE_MAX_RADIUS)
@@ -82,8 +83,10 @@ if __name__ == '__main__':
             sys.stdout.write("Progress: %d%%   \r" % (int((i + preload_count) / SAMPLE_QUANTITY * 100)))
             sys.stdout.flush()
 
-            if i % 50 == 0:
-                dataset.dump_on_disk(metadata)
+            if i % 500 == 0:
+                dataset.dump_images_on_disk()
+            if i % 5000 == 0:
+                dataset.save_json_files(metadata)
 
             if args.verbose:
                 show_frames(rgbA, depthA, rgbB, depthB)
@@ -91,5 +94,5 @@ if __name__ == '__main__':
             k = cv2.waitKey(1)
             if k == ESCAPE_KEY:
                 break
-
-    dataset.dump_on_disk(metadata)
+    dataset.dump_images_on_disk()
+    dataset.save_json_files(metadata)
