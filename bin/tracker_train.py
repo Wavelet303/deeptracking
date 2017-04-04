@@ -154,7 +154,7 @@ def train_loop(model, dataset, logger, log_message_ratio=0.01):
                 progression = float(i+1)/float(dataset.get_batch_qty())*100
                 message_logger.info("[{}%] : Train loss: {}".format(int(progression), losses["label"]))
                 elapsed_time = time.time() - start_time
-                message_logger.info("Time/batch : {}".format(100 * elapsed_time / progression))
+                message_logger.info("Time/batch : {}h".format((100 * elapsed_time / progression)/3600))
 
     total_loss = data_logger.get_as_numpy("Minibatch")[:, 0]
     mean_loss = 0 if len(total_loss) < 5 else np.mean(total_loss[-5:])

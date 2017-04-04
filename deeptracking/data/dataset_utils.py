@@ -10,38 +10,6 @@ except ImportError:
     pass
 
 
-def noise_image(img, gaussian_std=6, sp_proba=0.01, sp_strenght=50):
-    type = img.dtype
-    if len(img.shape) == 2:
-        mask = img[:, :] != 0
-    else:
-        mask = img[:, :, 0] != 0
-        mask = mask[:, :, np.newaxis]
-    gaussian_noise = np.random.normal(0, gaussian_std, img.shape)
-    salt_pepper = np.random.uniform(0, 1, img.shape)
-    gaussian_noise[salt_pepper > 1 - sp_proba] = sp_strenght
-    gaussian_noise[salt_pepper < sp_proba] = -sp_strenght
-    return ((gaussian_noise + img) * mask).astype(type)
-
-
-def load_pose(header, id):
-    return Transform.from_parameters(float(header[id]["vector"]["0"]),
-                                     float(header[id]["vector"]["1"]),
-                                     float(header[id]["vector"]["2"]),
-                                     float(header[id]["vector"]["3"]),
-                                     float(header[id]["vector"]["4"]),
-                                     float(header[id]["vector"]["5"]))
-
-
-def extract_viewpoint_sizes(header):
-    viewpoint_size = int(header["metaData"]["frameQty"])
-    pair_size = int(header["metaData"]["PairsQty"])
-    total_size = viewpoint_size * pair_size
-    if total_size == 0:
-        total_size = viewpoint_size
-    return viewpoint_size, pair_size, total_size
-
-
 def crop_viewpoint(viewpoint):
     viewpoint.frame.color = crop_image(viewpoint.frame.color)
     viewpoint.frame.depth = crop_image(viewpoint.frame.depth)
@@ -54,46 +22,10 @@ def crop_image(image, crop_center, size=100):
     return image
 
 
-def normalize_label(params, max_translation, max_rotation_rad):
-    params[0] /= max_translation
-    params[1] /= max_translation
-    params[2] /= max_translation
-    params[3] /= max_rotation_rad
-    params[4] /= max_rotation_rad
-    params[5] /= max_rotation_rad
-    return params
-
-
 def unnormalize_label(params, max_translation, max_rotation_rad):
     params[:, :3] *= max_translation
     params[:, 3:] *= math.degrees(max_rotation_rad)
     return params
-
-
-def load_prior(header, prior_tensor, isQuaternion=True, inverse=False):
-    viewpoint_size, pair_size, total_size = extract_viewpoint_sizes(header)
-    for i in range(total_size):
-        if pair_size:
-            id = str(int(i / pair_size))
-        else:
-            id = str(i)
-        pose = load_pose(header, id)
-        if inverse:
-            pose = pose.inverse()
-        prior_tensor[i, :] = np.array(pose.to_parameters(isQuaternion=isQuaternion))
-
-
-def load_label(header, label_tensor):
-    viewpoint_size, pair_size, total_size = extract_viewpoint_sizes(header)
-    for i in range(viewpoint_size):
-        for j in range(pair_size):
-            id = str(i) + "n" + str(j)
-            pose = load_pose(header, str(id))
-            label = np.array(pose.to_parameters(isQuaternion=False))
-            normalize_label(label,
-                            float(header["metaData"]["translation_range"]),
-                            float(header["metaData"]["rotation_range"]))
-            label_tensor[i * pair_size + j, :] = label
 
 
 def combine_view_transform(vp, view_transform):

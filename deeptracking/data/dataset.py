@@ -13,14 +13,14 @@ from deeptracking.data.frame import Frame, FrameNumpy
 
 
 class Dataset(ParallelMinibatch):
-    def __init__(self, folder_path, frame_class="numpy", minibatch_size=64, max_parallel_buffer_size=0):
+    def __init__(self, folder_path, frame_class="png", minibatch_size=64, max_parallel_buffer_size=0):
         ParallelMinibatch.__init__(self, max_parallel_buffer_size)
         self.path = folder_path
         self.data_pose = []
         self.data_pair = {}
         self.metadata = {}
         self.camera = None
-        self.frame_class = Frame
+        self.frame_class = None
         self.set_save_type(frame_class)
         self.mean = None
         self.std = None
@@ -207,10 +207,15 @@ class Dataset(ParallelMinibatch):
         image_buffer[buffer_index, 4:7, :, :] = rgbB
         image_buffer[buffer_index, 7, :, :] = depthB
         prior_buffer[buffer_index] = initial_pose.to_parameters(isQuaternion=True)
-        label_buffer[buffer_index] = transformed_pose.to_parameters()
+        label_buffer[buffer_index] = self.normalize_label(transformed_pose.to_parameters())
 
     def get_batch_qty(self):
         return math.ceil(self.size() / self.minibatch_size)
+
+    def normalize_label(self, params):
+        params[:3] /= float(self.metadata["translation_range"])
+        params[3:] /= float(self.metadata["rotation_range"])
+        return params
 
     """
         PARALLEL MINIBATCH METHODS
