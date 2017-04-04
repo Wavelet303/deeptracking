@@ -132,6 +132,8 @@ class Dataset(ParallelMinibatch):
                 data = json.load(data_file)
         except FileNotFoundError:
             return False
+        self.metadata = data["metaData"]
+        self.set_save_type(self.metadata["save_type"])
         count = 0
         # todo this is not clean!
         while True:
@@ -150,8 +152,6 @@ class Dataset(ParallelMinibatch):
                 break
         if not viewpoint_file_only:
             self.camera = Camera.load_from_json(self.path)
-            self.metadata = data["metaData"]
-            self.set_save_type(self.metadata["save_type"])
             if load_mean_std:
                 self.set_mean_std(self.path)
         return True
