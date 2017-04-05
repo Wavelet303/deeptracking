@@ -19,6 +19,7 @@
 
   "COMMENT_1" : "Real data section",
   "detector_layout_path": "deeptracking/detector/aruco_layout.xml",
+  "real_path": "/path/to/real/raw/data",
 
   "COMMENT_2" : "Synthetic data section",
   "translation_range": "0.02",

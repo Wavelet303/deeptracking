@@ -1,3 +1,9 @@
+"""
+    Sanity tests for dataset folder
+    - Make sure all images in viewpoints.json are in the folder
+    ...
+"""
+
 from deeptracking.data.dataset import Dataset
 import sys
 

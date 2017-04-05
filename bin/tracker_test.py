@@ -94,7 +94,8 @@ if __name__ == '__main__':
             predicted_pose = tracker.estimate_current_pose(previous_pose, current_rgb, current_depth, debug=args.verbose)
             print("Estimation processing time : {}".format(time.time() - start_time))
             screen = tracker.get_debug_screen(previous_rgb)
-            log_pose_difference(predicted_pose, ground_truth_pose, data_logger)
+            if not USE_SENSOR:
+                log_pose_difference(predicted_pose, ground_truth_pose, data_logger)
             previous_pose = predicted_pose
 
         previous_rgb = current_rgb

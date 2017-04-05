@@ -118,6 +118,8 @@ class Dataset(ParallelMinibatch):
         viewpoints_data["metaData"] = metadata
         with open(os.path.join(self.path, "viewpoints.json"), 'w') as outfile:
             json.dump(viewpoints_data, outfile)
+        if self.camera is None:
+            raise Exception("Camera is not defined for dataset...")
         self.camera.save(self.path)
 
     def load(self, viewpoint_file_only=False, load_mean_std=True):
