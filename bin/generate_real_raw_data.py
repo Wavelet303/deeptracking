@@ -82,13 +82,15 @@ if __name__ == '__main__':
     vpRender.load_ambiant_occlusion_map(MODELS[0]["ambiant_occlusion_model"])
 
     # todo, read from file?
-    detection_offset = Transform.from_parameters(-0.0017330130795, 0.00853765942156, -0.102324359119,
-                                                 0.242059546511, -1.22307961834, 2.01838164219,
-                                                 True)
+    detection_offset = Transform()
     rgbd_record = False
     save_next_rgbd_pose = False
+    lock_offset = False
     if PRELOAD:
-        dataset.load()
+        dataset.load(load_mean_std=False)
+        if dataset.size():
+            detection_offset = Transform.from_matrix(np.load(os.path.join(dataset.path, "offset.npy")))
+            lock_offset = True
 
     while True:
         bgr, depth = sensor.get_frame()
@@ -118,8 +120,7 @@ if __name__ == '__main__':
                 bgr_render = cv2.resize(bgr_render, (int(1920 / ratio), int(1080 / ratio)))
                 screen = image_blend(bgr_render, screen)
 
-        if args.verbose:
-            cv2.imshow("image", screen[:, :, ::-1])
+        cv2.imshow("image", screen[:, :, ::-1])
         key = cv2.waitKey(1)
         key_chr = chr(key & 255)
         if key != -1:
@@ -130,30 +131,38 @@ if __name__ == '__main__':
             rgbd_record = not rgbd_record
         elif key_chr == ' ':
             save_next_rgbd_pose = True
-        elif key == NUM_PAD_1_KEY:
-            detection_offset.rotate(z=math.radians(-1))
-        elif key == NUM_PAD_2_KEY:
-            detection_offset.translate(z=0.001)
-        elif key == NUM_PAD_3_KEY:
-            detection_offset.rotate(x=math.radians(-1))
-        elif key == NUM_PAD_4_KEY:
-            detection_offset.translate(x=-0.001)
-        elif key == NUM_PAD_6_KEY:
-            detection_offset.translate(x=0.001)
-        elif key == NUM_PAD_7_KEY:
-            detection_offset.rotate(z=math.radians(1))
-        elif key == NUM_PAD_8_KEY:
-            detection_offset.translate(z=-0.001)
-        elif key == NUM_PAD_9_KEY:
-            detection_offset.rotate(x=math.radians(1))
-        elif key == ARROW_UP_KEY:
-            detection_offset.translate(y=-0.001)
-        elif key == ARROW_DOWN_KEY:
-            detection_offset.translate(y=0.001)
-        elif key == ARROW_LEFT_KEY:
-            detection_offset.rotate(y=math.radians(-1))
-        elif key == ARROW_RIGHT_KEY:
-            detection_offset.rotate(y=math.radians(1))
+        # Lock offset makes sure that we wont change the file from an already generated dataset... It is important
+        # since we do not want to have a different offset for each pictures. offset file is only used to compute
+        # ground truth object pose given images
+        if not lock_offset:
+            if key == NUM_PAD_1_KEY:
+                detection_offset.rotate(z=math.radians(-1))
+            elif key == NUM_PAD_2_KEY:
+                detection_offset.translate(z=0.001)
+            elif key == NUM_PAD_3_KEY:
+                detection_offset.rotate(x=math.radians(-1))
+            elif key == NUM_PAD_4_KEY:
+                detection_offset.translate(x=-0.001)
+            elif key == NUM_PAD_5_KEY:
+                detection_offset = Transform.from_parameters(-0.0017330130795, 0.00853765942156, -0.102324359119,
+                                0.242059546511, -1.22307961834, 2.01838164219,
+                                True)
+            elif key == NUM_PAD_6_KEY:
+                detection_offset.translate(x=0.001)
+            elif key == NUM_PAD_7_KEY:
+                detection_offset.rotate(z=math.radians(1))
+            elif key == NUM_PAD_8_KEY:
+                detection_offset.translate(z=-0.001)
+            elif key == NUM_PAD_9_KEY:
+                detection_offset.rotate(x=math.radians(1))
+            elif key == ARROW_UP_KEY:
+                detection_offset.translate(y=-0.001)
+            elif key == ARROW_DOWN_KEY:
+                detection_offset.translate(y=0.001)
+            elif key == ARROW_LEFT_KEY:
+                detection_offset.rotate(y=math.radians(-1))
+            elif key == ARROW_RIGHT_KEY:
+                detection_offset.rotate(y=math.radians(1))
     print("Compute detections")
     for i in range(dataset.size()):
         frame, pose = dataset.data_pose[i]
@@ -165,5 +174,7 @@ if __name__ == '__main__':
                 print("[WARNING] : Detector returns uncertain pose at frame {}".format(i))
             #Todo : need better way to handle viewpoint's pose change in dataset...
             dataset.data_pose[i] = (Frame(rgb, depth, str(i)), pose)
-    dataset.dump_on_disk()
+    np.save(os.path.join(dataset.path, "offset"), detection_offset.matrix)
+    dataset.dump_images_on_disk()
+    dataset.save_json_files({"save_type": "png"})
     sensor.stop()
