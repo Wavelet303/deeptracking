@@ -216,7 +216,7 @@ if __name__ == '__main__':
         if val_loss < best_validation_loss:
             best_validation_loss = val_loss
             best_epoch = epoch
-            tracker_model.save(os.path.join(OUTPUT_PATH, data["session_name"]))
+            tracker_model.save(os.path.join(OUTPUT_PATH, data["session_name"]), str(epoch))
             early_stop_wait = 0
         else:
             early_stop_wait += 1

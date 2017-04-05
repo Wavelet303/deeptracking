@@ -118,6 +118,7 @@ end
 function ModelBase:init_model()
     self.net = self:set_backend(self.net)
     self.params, self.gradParams = self.net:getParameters()
+    self.savenet = self.net:clone('weight','bias','running_mean','running_std')
 end
 
 function ModelBase:train(inputs, labels)
@@ -152,12 +153,10 @@ function ModelBase:loss_function(prediction, truth)
     return losses
 end
 
-function ModelBase:save(path, light)
-    if light then
-        self.net:clearState()
-    end
-    torch.save(path..".t7", self.net)
-    torch.save(path.."_optim.t7", self.config)
+function ModelBase:save(path, suffix)
+    suffix = suffix == nil and "" or suffix
+    torch.save(path..suffix..".t7", self.savenet)
+    torch.save(path..suffix.."_optim.t7", self.config)
 end
 
 function ModelBase:load(path)
