@@ -3,6 +3,7 @@ from deeptracking.utils.argumentparser import ArgumentParser
 from deeptracking.data.sensors.kinect2 import Kinect2
 from deeptracking.data.dataset_utils import rect_from_pose, image_blend
 from deeptracking.utils.camera import Camera
+from deeptracking.utils.icp import icp
 from deeptracking.utils.transform import Transform
 from deeptracking.data.dataset import Dataset
 from deeptracking.data.frame import Frame, FrameNumpy
@@ -47,6 +48,24 @@ def show_occlusion(detection, rgb, depth, camera, bb_width):
     cv2.imshow("object crop depth", ((depth_crop / np.max(depth_crop) * 255).astype(np.uint8)))
     cv2.rectangle(rgb, tuple(pixels[0][::-1]), tuple(pixels[3][::-1]), (0, 0, 255), 2)
 
+
+def clean_point_cloud(points, pose):
+    # remove zeros
+    points = points[np.all(points != 0, axis=1)]
+    # cam to board coordinsta system
+    transform = pose.inverse()
+    scale = Transform.scale(1, -1, -1)
+    transform.combine(scale)
+    points = transform.rotation.dot(points)
+    points = transform.translation.dot(points)
+    # board data only
+    #radius = 0.15
+    #points = points[points[:, 0] < radius]
+    #points = points[points[:, 0] > -radius]
+    #points = points[points[:, 1] < radius]
+    #points = points[points[:, 1] > -radius]
+    #points = points[points[:, 2] > 0.01]
+    return points
 
 if __name__ == '__main__':
 
@@ -144,9 +163,17 @@ if __name__ == '__main__':
             elif key == NUM_PAD_4_KEY:
                 detection_offset.translate(x=-0.001)
             elif key == NUM_PAD_5_KEY:
-                detection_offset = Transform.from_parameters(-0.0017330130795, 0.00853765942156, -0.102324359119,
-                                0.242059546511, -1.22307961834, 2.01838164219,
-                                True)
+                frame_points = camera.backproject_depth(depth)
+                frame_points = clean_point_cloud(frame_points, detection)
+                render_points = camera.backproject_depth(depth_render)
+                render_points = clean_point_cloud(render_points, detection)
+                print(frame_points)
+                print(render_points)
+                transform = icp(frame_points, render_points)
+                print(transform)
+                #detection_offset = Transform.from_parameters(-0.0017330130795, 0.00853765942156, -0.102324359119,
+                #                0.242059546511, -1.22307961834, 2.01838164219,
+                #                True)
             elif key == NUM_PAD_6_KEY:
                 detection_offset.translate(x=0.001)
             elif key == NUM_PAD_7_KEY:

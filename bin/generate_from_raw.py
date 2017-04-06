@@ -141,13 +141,13 @@ if __name__ == '__main__':
 
             index = output_dataset.add_pose(rgbA, depthA, previous_pose)
             output_dataset.add_pair(rgbB, depthB, random_transform, index)
-
-            sys.stdout.write("Progress: %d%%   \r" % (int((i * SAMPLE_QUANTITY + j) / (SAMPLE_QUANTITY * real_dataset.size()) * 100)))
+            iteration = i * SAMPLE_QUANTITY + j
+            sys.stdout.write("Progress: %d%%   \r" % (int(iteration / (SAMPLE_QUANTITY * real_dataset.size()) * 100)))
             sys.stdout.flush()
 
-            if i % 500 == 0:
+            if iteration % 500 == 0:
                 output_dataset.dump_images_on_disk()
-            if i % 5000 == 0:
+            if iteration % 5000 == 0:
                 output_dataset.save_json_files(metadata)
 
             if args.verbose:
