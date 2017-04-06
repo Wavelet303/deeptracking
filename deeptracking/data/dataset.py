@@ -122,7 +122,7 @@ class Dataset(ParallelMinibatch):
             raise Exception("Camera is not defined for dataset...")
         self.camera.save(self.path)
 
-    def load(self, viewpoint_file_only=False, load_mean_std=True):
+    def load(self, viewpoint_file_only=False):
         """
         Load a viewpoints.json to dataset's structure
         Todo: datastructure should be more similar to json structure...
@@ -154,8 +154,7 @@ class Dataset(ParallelMinibatch):
                 break
         if not viewpoint_file_only:
             self.camera = Camera.load_from_json(self.path)
-            if load_mean_std:
-                self.set_mean_std(self.path)
+            self.set_mean_std(self.path)
         return True
 
     @staticmethod
