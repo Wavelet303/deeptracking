@@ -4,6 +4,7 @@ from deeptracking.data.dataset import Dataset
 from deeptracking.data.dataset_utils import combine_view_transform, center_pixel, show_frames
 from deeptracking.data.modelrenderer import ModelRenderer, InitOpenGL
 from deeptracking.data.dataset_utils import normalize_scale
+from deeptracking.utils.camera import Camera
 from scipy import ndimage
 import sys
 import json
@@ -12,9 +13,9 @@ import math
 import cv2
 import numpy as np
 import random
-import time
 
 ESCAPE_KEY = 1048603
+
 
 def mask_real_image(color, depth, depth_render):
     mask = (depth_render != 0).astype(np.uint8)[:, :, np.newaxis]
@@ -100,9 +101,11 @@ if __name__ == '__main__':
         os.mkdir(OUTPUT_PATH)
 
     real_dataset = Dataset(REAL_PATH)
-    real_dataset.load(load_mean_std=False)
+    real_dataset.load(viewpoint_file_only=True)
+    camera = Camera.load_from_json(real_dataset.path)
+    real_dataset.camera = camera
     output_dataset = Dataset(OUTPUT_PATH, frame_class=data["save_type"])
-    output_dataset.camera = real_dataset.camera
+    output_dataset.camera = camera
     window = InitOpenGL(real_dataset.camera.width, real_dataset.camera.height)
 
     model = MODELS[0]

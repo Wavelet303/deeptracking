@@ -33,7 +33,7 @@ if __name__ == '__main__':
         rgb_render, depth_render = vpRender.render(detection.transpose())
         bgr_render = rgb_render[:, :, ::-1].copy()
         img = image_blend(bgr_render, img)
-        
+
         cv2.imshow("view", img)
         cv2.waitKey(30)
     dataset.save_json_files({"save_type": "png"})

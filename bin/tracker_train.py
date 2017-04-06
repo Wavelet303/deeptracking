@@ -113,16 +113,27 @@ def config_model(data, dataset):
     linear_size = int(data["training_param"]["linear_size"])
     convo1_size = int(data["training_param"]["convo1_size"])
     convo2_size = int(data["training_param"]["convo2_size"])
+    model_finetune = data["model_finetune"]
     model_class = PyTorchHelpers.load_lua_class("deeptracking/tracker/rgbd_tracker.lua", 'RGBDTracker')
     tracker_model = model_class('cuda')
+
     tracker_model.set_configs({
-        "learningRate": learning_rate,
-        "learningRateDecay": learning_rate_decay,
-        "weightDecay": weight_decay,
         "input_size": input_size,
         "linear_size": linear_size,
         "convo1_size": convo1_size,
         "convo2_size": convo2_size,
+    })
+
+    if model_finetune == "":
+        tracker_model.build_model()
+        tracker_model.init_model()
+    else:
+        tracker_model.load(model_finetune)
+
+    tracker_model.set_configs({
+        "learningRate": learning_rate,
+        "learningRateDecay": learning_rate_decay,
+        "weightDecay": weight_decay,
         # Necessary data at test time, the user can get all information while loading the model and its configs
         "translation_range": float(dataset_metadata["translation_range"]),
         "rotation_range": float(dataset_metadata["rotation_range"]),
@@ -130,8 +141,6 @@ def config_model(data, dataset):
         "mean_matrix": dataset.mean,
         "std_matrix": dataset.std
     })
-    tracker_model.build_model()
-    tracker_model.init_model()
     return tracker_model
 
 
