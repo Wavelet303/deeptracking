@@ -221,6 +221,7 @@ if __name__ == '__main__':
         val_loss = validation_loop(tracker_model, valid_dataset)
         message_logger.slack("[Epoch {}] Train loss: {} Val loss: {}".format(epoch, train_loss, val_loss))
         data_logger.add_row("Epoch", [train_loss, val_loss])
+        data_logger.save(OUTPUT_PATH)
         # Early Stop
         if val_loss < best_validation_loss:
             best_validation_loss = val_loss
@@ -231,7 +232,6 @@ if __name__ == '__main__':
             early_stop_wait += 1
             if early_stop_wait > EARLY_STOP_WAIT_LIMIT:
                 break
-    data_logger.save(OUTPUT_PATH)
     message_logger.slack("Train Terminated at {}".format(get_current_time()))
     message_logger.slack("Total Epoch: {}\nBest Validation Loss: {}".format(best_epoch, best_validation_loss))
 
