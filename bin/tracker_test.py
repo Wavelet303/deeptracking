@@ -63,8 +63,6 @@ if __name__ == '__main__':
         gen = lambda alist: [(yield i) for i in alist]
         frame_generator = gen(video_data.data_pose)
         camera = video_data.camera
-        print(camera)
-        print(video_data.data_pose)
         use_ground_truth_pose = False
 
     tracker = DeepTracker(camera,

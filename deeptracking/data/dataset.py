@@ -33,21 +33,16 @@ class Dataset(ParallelMinibatch):
         else:
             self.frame_class = Frame
 
-    def set_mean_std(self, path):
-        try:
-            self.mean = np.load(os.path.join(path, "mean.npy"))
-            self.std = np.load(os.path.join(path, "std.npy"))
-        except Exception:
-            logger.info("No mean/std file found in path {}".format(path))
-            max_size = 10000
-            indexes = self.compute_minibatches_permutations_()[:int(max_size/self.minibatch_size)]
-            logger.info("Computing Mean")
-            self.mean = self.compute_channels_mean(indexes)
-            logger.info("Computing Std")
-            self.std = self.compute_channels_std(indexes, self.mean)
-            logger.info("Saving mean and std")
-            np.save(os.path.join(path, "mean.npy"), self.mean)
-            np.save(os.path.join(path, "std.npy"), self.std)
+    def compute_mean_std(self):
+        max_size = 10000
+        indexes = self.compute_minibatches_permutations_()[:int(max_size/self.minibatch_size)]
+        logger.info("Computing Mean")
+        self.mean = self.compute_channels_mean(indexes)
+        logger.info("Computing Std")
+        self.std = self.compute_channels_std(indexes, self.mean)
+        logger.info("Saving mean and std")
+        np.save(os.path.join(self.path, "mean.npy"), self.mean)
+        np.save(os.path.join(self.path, "std.npy"), self.std)
 
     def compute_channels_mean(self, batch_indexes):
         # todo could be done in parallel
@@ -122,7 +117,7 @@ class Dataset(ParallelMinibatch):
             raise Exception("Camera is not defined for dataset...")
         self.camera.save(self.path)
 
-    def load(self, viewpoint_file_only=False):
+    def load(self):
         """
         Load a viewpoints.json to dataset's structure
         Todo: datastructure should be more similar to json structure...
@@ -153,8 +148,6 @@ class Dataset(ParallelMinibatch):
 
             except KeyError:
                 break
-        if not viewpoint_file_only:
-            self.set_mean_std(self.path)
         return True
 
     @staticmethod

@@ -96,11 +96,15 @@ def config_datasets(data):
         message_logger.error("Train dataset empty")
         sys.exit(-1)
     train_dataset.set_data_augmentation(data_augmentation)
+    train_dataset.compute_mean_std()
+    message_logger.info("Computed mean : {}\nComputed Std : {}".format(train_dataset.mean, train_dataset.std))
     valid_dataset = Dataset(valid_path, minibatch_size=minibatch_size)
     if not valid_dataset.load():
         message_logger.error("Valid dataset empty")
         sys.exit(-1)
     valid_dataset.set_data_augmentation(data_augmentation)
+    valid_dataset.mean = train_dataset.mean
+    valid_dataset.std = valid_dataset.std
     return train_dataset, valid_dataset
 
 

@@ -169,13 +169,16 @@ def normalize_channels(rgb, depth, mean, std):
     :param type:
     :return:
     """
+    rgb = rgb.T
+    depth = depth.T
     rgb = rgb.astype(np.float32)
-    rgb -= mean[np.newaxis, np.newaxis, :3]
-    rgb /= std[np.newaxis, np.newaxis, :3]
+    rgb -= mean[:3, np.newaxis, np.newaxis]
+    rgb /= std[:3, np.newaxis, np.newaxis]
     depth = depth.astype(np.float32)
-    depth -= mean[np.newaxis, np.newaxis, 3]
-    depth /= std[np.newaxis, np.newaxis, 3]
-    return rgb.T, depth.T
+    depth -= mean[3, np.newaxis, np.newaxis]
+    depth /= std[3, np.newaxis, np.newaxis]
+    return rgb, depth
+
 
 def unormalize_channels(rgb, depth, mean, std):
     rgb = rgb.T
