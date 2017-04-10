@@ -78,6 +78,8 @@ class DeepTracker(TrackerBase):
         self.prior_buffer[0] = np.array(previous_pose.to_parameters(isQuaternion=True))
         prediction = self.tracker_model.test([self.input_buffer, self.prior_buffer]).asNumpyTensor()
         prediction = unnormalize_label(prediction, self.translation_range, self.rotation_range)
+        if debug:
+            print("Prediction : {}".format(prediction))
         prediction = Transform.from_parameters(*prediction[0], is_degree=True)
         current_pose = combine_view_transform(previous_pose.inverse(), prediction).inverse()
         self.debug_rgb = render_rgb

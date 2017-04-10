@@ -52,7 +52,7 @@ class DataAugmentation:
         ret_depth = depth
 
         if real and self.occluder:
-            if random.uniform(0, 1) < 1:
+            if random.uniform(0, 1) < 0.75:
                 rand_id = random.randint(0, self.occluder.size() - 1)
                 occluder_rgb, occluder_depth, pose = self.occluder.load_image(rand_id)
                 if random.randint(0, 1):

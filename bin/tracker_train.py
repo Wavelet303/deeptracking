@@ -152,6 +152,8 @@ def train_loop(model, dataset, logger, log_message_ratio=0.01):
         for i, minibatch in enumerate(minibatchs):
             image_buffer, prior_buffer, label_buffer = minibatch
             if args.verbose:
+                print("Prior : {}".format(prior_buffer[0]))
+                print("Label : {}".format(label_buffer[0]))
                 show_frames_from_buffer(image_buffer, dataset.mean, dataset.std)
 
             losses = model.train([image_buffer, prior_buffer], label_buffer)
