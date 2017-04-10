@@ -55,7 +55,7 @@ if __name__ == '__main__':
         camera = sensor.camera
     else:
         video_data = Dataset(VIDEO_PATH)
-        if video_data.load(load_mean_std=False) == False:
+        if not video_data.load(viewpoint_file_only=False):
             print("[ERROR] Error while loading video...")
             sys.exit(-1)
         frame_download_path = video_data.path
@@ -63,6 +63,8 @@ if __name__ == '__main__':
         gen = lambda alist: [(yield i) for i in alist]
         frame_generator = gen(video_data.data_pose)
         camera = video_data.camera
+        print(camera)
+        print(video_data.data_pose)
         use_ground_truth_pose = False
 
     tracker = DeepTracker(camera,
@@ -72,7 +74,6 @@ if __name__ == '__main__':
                           SHADER_PATH)
     tracker.load(MODEL_PATH)
     tracker.print()
-
     previous_frame, previous_pose = next(frame_generator)
     previous_rgb, previous_depth = previous_frame.get_rgb_depth(frame_download_path)
     previous_pose = previous_pose.inverse()

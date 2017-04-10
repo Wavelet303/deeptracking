@@ -132,6 +132,7 @@ class Dataset(ParallelMinibatch):
         try:
             with open(os.path.join(self.path, "viewpoints.json")) as data_file:
                 data = json.load(data_file)
+            self.camera = Camera.load_from_json(self.path)
         except FileNotFoundError:
             return False
         self.metadata = data["metaData"]
@@ -153,7 +154,6 @@ class Dataset(ParallelMinibatch):
             except KeyError:
                 break
         if not viewpoint_file_only:
-            self.camera = Camera.load_from_json(self.path)
             self.set_mean_std(self.path)
         return True
 
