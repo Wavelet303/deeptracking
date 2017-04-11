@@ -58,7 +58,7 @@ if __name__ == '__main__':
     sphere_sampler = UniformSphereSampler(SPHERE_MIN_RADIUS, SPHERE_MAX_RADIUS)
     preload_count = 0
     if PRELOAD:
-        if dataset.load(viewpoint_file_only=True):
+        if dataset.load():
             preload_count = dataset.size()
             print("This Dataset already contains {} samples".format(preload_count))
     # Iterate over all models from config files

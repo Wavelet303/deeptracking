@@ -7,7 +7,7 @@ matplotlib.style.use('ggplot')
 
 if __name__ == '__main__':
     path = "/home/mathieu/Dataset/DeepTrack/model/skull/"
-    files = ["Minibatch.csv", "Grad_Translation.csv", "Grad_Rotation.csv"]
+    files = ["Minibatch.csv", "Grad_Translation.csv", "Grad_Rotation.csv", "Epoch.csv"]
 
     for filename in files:
         file_path = os.path.join(path, filename)

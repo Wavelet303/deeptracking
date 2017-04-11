@@ -55,7 +55,7 @@ if __name__ == '__main__':
         camera = sensor.camera
     else:
         video_data = Dataset(VIDEO_PATH)
-        if not video_data.load(viewpoint_file_only=False):
+        if not video_data.load():
             print("[ERROR] Error while loading video...")
             sys.exit(-1)
         frame_download_path = video_data.path
