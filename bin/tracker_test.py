@@ -17,12 +17,12 @@ ESCAPE_KEY = 1048603
 
 
 def log_pose_difference(prediction, ground_truth, logger):
-    prediction_params = prediction.inverse().to_parameters(isDegree=True)
-    ground_truth_params = ground_truth.inverse().to_parameters(isDegree=True)
+    prediction_params = prediction.to_parameters(isDegree=True)
+    ground_truth_params = ground_truth.to_parameters(isDegree=True)
     difference = np.zeros(6)
     for j in range(3):
         difference[j] = abs(prediction_params[j] - ground_truth_params[j])
-        difference[j + 3] = angle_distance(prediction_params[j + 3], ground_truth_params[j + 3])
+        difference[j + 3] = abs(angle_distance(prediction_params[j + 3], ground_truth_params[j + 3]))
     logger.add_row("eval_diff", difference)
 
 if __name__ == '__main__':
@@ -45,6 +45,7 @@ if __name__ == '__main__':
     MODEL_3D_PATH = MODELS_3D[0]["model_path"]
     MODEL_3D_AO_PATH = MODELS_3D[0]["ambiant_occlusion_model"]
     USE_SENSOR = data["use_sensor"] == "True"
+    RESET_FREQUENCY = int(data["reset_frequency"])
     frame_download_path = None
     use_ground_truth_pose = True
 
@@ -77,7 +78,7 @@ if __name__ == '__main__':
     previous_pose = previous_pose.inverse()
     data_logger = DataLogger()
     data_logger.create_dataframe("eval_diff", ("Tx", "Ty", "Tz", "Rx", "Ry", "Rz"))
-    for current_frame, ground_truth_pose in frame_generator:
+    for i, (current_frame, ground_truth_pose) in enumerate(frame_generator):
         # get actual frame
         current_rgb, current_depth = current_frame.get_rgb_depth(frame_download_path)
         screen = current_rgb
@@ -88,13 +89,15 @@ if __name__ == '__main__':
                 rgb, depth = tracker.renderer.render(previous_pose.inverse().transpose())
                 screen = image_blend(rgb, current_rgb)
         else:
+            if RESET_FREQUENCY != 0 and i % RESET_FREQUENCY == 0:
+                previous_pose = ground_truth_pose.inverse()
             # process pose estimation of current frame given last pose
             start_time = time.time()
             predicted_pose = tracker.estimate_current_pose(previous_pose, current_rgb, current_depth, debug=args.verbose)
             print("Estimation processing time : {}".format(time.time() - start_time))
             screen = tracker.get_debug_screen(previous_rgb)
             if not USE_SENSOR:
-                log_pose_difference(predicted_pose, ground_truth_pose, data_logger)
+                log_pose_difference(predicted_pose.inverse(), ground_truth_pose, data_logger)
             previous_pose = predicted_pose
 
         previous_rgb = current_rgb
