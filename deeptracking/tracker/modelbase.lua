@@ -153,7 +153,8 @@ end
 
 function ModelBase:save(path, suffix)
     suffix = suffix == nil and "" or suffix
-    local model = self.net:clone():clearState()
+    self.net:clearState()
+    local model = self.net:clone():float()
     torch.save(path..suffix..".t7", model)
     torch.save(path..suffix.."_optim.t7", self.config)
 end
