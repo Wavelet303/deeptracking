@@ -104,7 +104,7 @@ def config_datasets(data):
         sys.exit(-1)
     valid_dataset.set_data_augmentation(data_augmentation)
     valid_dataset.mean = train_dataset.mean
-    valid_dataset.std = valid_dataset.std
+    valid_dataset.std = train_dataset.std
     return train_dataset, valid_dataset
 
 
@@ -156,6 +156,7 @@ def train_loop(model, dataset, logger, log_message_ratio=0.01):
         for i, minibatch in enumerate(minibatchs):
             image_buffer, prior_buffer, label_buffer = minibatch
             if args.verbose:
+                print("Train")
                 print("Prior : {}".format(prior_buffer[0]))
                 print("Label : {}".format(label_buffer[0]))
                 show_frames_from_buffer(image_buffer, dataset.mean, dataset.std)
@@ -182,6 +183,11 @@ def validation_loop(model, dataset):
         loss_qty = 0
         minibatchs = dataset.get_minibatch()
         for image_buffer, prior_buffer, label_buffer in minibatchs:
+            if args.verbose:
+                print("Valid")
+                print("Prior : {}".format(prior_buffer[0]))
+                print("Label : {}".format(label_buffer[0]))
+                show_frames_from_buffer(image_buffer, dataset.mean, dataset.std)
             prediction = model.test([image_buffer, prior_buffer])
             losses = model.loss_function(prediction, label_buffer)
             loss_sum += losses["label"]

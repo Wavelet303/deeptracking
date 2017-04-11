@@ -2,8 +2,6 @@ import os
 import numpy as np
 import json
 import math
-import logging
-logger = logging.getLogger(__name__)
 
 from deeptracking.data.parallelminibatch import ParallelMinibatch
 from deeptracking.data.dataset_utils import normalize_channels, normalize_depth
@@ -36,11 +34,8 @@ class Dataset(ParallelMinibatch):
     def compute_mean_std(self):
         max_size = 10000
         indexes = self.compute_minibatches_permutations_()[:int(max_size/self.minibatch_size)]
-        logger.info("Computing Mean")
         self.mean = self.compute_channels_mean(indexes)
-        logger.info("Computing Std")
         self.std = self.compute_channels_std(indexes, self.mean)
-        logger.info("Saving mean and std")
         np.save(os.path.join(self.path, "mean.npy"), self.mean)
         np.save(os.path.join(self.path, "std.npy"), self.std)
 

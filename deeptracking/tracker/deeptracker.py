@@ -75,7 +75,7 @@ class DeepTracker(TrackerBase):
         self.input_buffer[0, 3, :, :] = depthA
         self.input_buffer[0, 4:7, :, :] = rgbB
         self.input_buffer[0, 7, :, :] = depthB
-        self.prior_buffer[0] = np.array(previous_pose.inverse().to_parameters(isQuaternion=True))
+        self.prior_buffer[0] = np.array(previous_pose.to_parameters(isQuaternion=True))
         prediction = self.tracker_model.test([self.input_buffer, self.prior_buffer]).asNumpyTensor()
         prediction = unnormalize_label(prediction, self.translation_range, self.rotation_range)
         if debug:
