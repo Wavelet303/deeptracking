@@ -6,8 +6,9 @@ import os
 matplotlib.style.use('ggplot')
 
 if __name__ == '__main__':
-    path = "../train_test_nogit"
-    path_csv = os.path.join(path, "eval_diff.csv")
+    path = "/home/mathieu/Dataset/DeepTrack/model/skull_real/scores"
+    name = "skull1"
+    path_csv = os.path.join(path, "{}_eval.csv".format(name))
 
     fig, axes = plt.subplots(nrows=2, ncols=1)
 
@@ -16,11 +17,11 @@ if __name__ == '__main__':
     df.plot(ax=axes[0], x=np.arange(len(df)), y=column_tags[:3])
     df.plot(ax=axes[1], x=np.arange(len(df)), y=column_tags[3:])
     fig = plt.gcf()
-    fig.savefig(os.path.join(path, "plot.png"))
-    plt.show()
+    fig.savefig(os.path.join(path, "{}_plot.png".format(name)))
+    #plt.show()
 
     # Compute scores data
     info = pd.DataFrame()
     info["mean"] = df.mean(axis=0)
     info["std"] = df.std(axis=0)
-    info.to_csv(os.path.join(path, "score.csv"), index=True, encoding='utf-8')
+    info.to_csv(os.path.join(path, "{}_score.csv".format(name)), index=True, encoding='utf-8')

@@ -12,7 +12,7 @@ import cv2
 import numpy as np
 
 from deeptracking.utils.data_logger import DataLogger
-
+import os
 ESCAPE_KEY = 1048603
 
 
@@ -23,7 +23,7 @@ def log_pose_difference(prediction, ground_truth, logger):
     for j in range(3):
         difference[j] = abs(prediction_params[j] - ground_truth_params[j])
         difference[j + 3] = abs(angle_distance(prediction_params[j + 3], ground_truth_params[j + 3]))
-    logger.add_row("eval_diff", difference)
+    logger.add_row(logger.get_dataframes_id()[0], difference)
 
 if __name__ == '__main__':
     args = ArgumentParser(sys.argv[1:])
@@ -38,6 +38,9 @@ if __name__ == '__main__':
     OUTPUT_PATH = data["output_path"]
     VIDEO_PATH = data["video_path"]
     MODEL_PATH = data["model_path"]
+    model_split_path = MODEL_PATH.split(os.sep)
+    model_name = model_split_path[-1]
+    model_folder = os.sep.join(model_split_path[:-1])
     MODELS_3D = data["models"]
     SHADER_PATH = data["shader_path"]
 
@@ -77,7 +80,7 @@ if __name__ == '__main__':
     previous_rgb, previous_depth = previous_frame.get_rgb_depth(frame_download_path)
     previous_pose = previous_pose.inverse()
     data_logger = DataLogger()
-    data_logger.create_dataframe("eval_diff", ("Tx", "Ty", "Tz", "Rx", "Ry", "Rz"))
+    data_logger.create_dataframe("{}_eval".format(model_name), ("Tx", "Ty", "Tz", "Rx", "Ry", "Rz"))
     for i, (current_frame, ground_truth_pose) in enumerate(frame_generator):
         # get actual frame
         current_rgb, current_depth = current_frame.get_rgb_depth(frame_download_path)
@@ -111,5 +114,7 @@ if __name__ == '__main__':
         elif key_chr == ' ':
             use_ground_truth_pose = not use_ground_truth_pose
             frame_generator.compute_detection(use_ground_truth_pose)
-
-    data_logger.save(OUTPUT_PATH)
+    log_folder = os.path.join(model_folder, "scores")
+    if not os.path.exists(log_folder):
+        os.mkdir(log_folder)
+    data_logger.save(log_folder)
