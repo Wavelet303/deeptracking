@@ -9,6 +9,7 @@
     },
 
   "training_param":{
+      "file": "deeptracking/tracker/rgbd_tracker.lua",
       "learning_rate": "0.005",
       "learning_rate_decay": "1e-5",
       "weight_decay": "0",

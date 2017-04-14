@@ -21,7 +21,7 @@ class DeepTracker(TrackerBase):
         self.object_width = object_width
 
         # setup model
-        model_class = PyTorchHelpers.load_lua_class("deeptracking/tracker/rgbd_tracker.lua", 'RGBDTracker')
+        model_class = PyTorchHelpers.load_lua_class("deeptracking/tracker/rgbd_quaternion_tracker.lua", 'RGBDTracker')
         self.tracker_model = model_class('cuda')
 
         if model_3d_path != "" and model_3d_ao_path != "" and shader_path != "":

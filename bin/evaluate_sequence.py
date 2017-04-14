@@ -6,8 +6,8 @@ import os
 matplotlib.style.use('ggplot')
 
 if __name__ == '__main__':
-    path = "/home/mathieu/Dataset/DeepTrack/model/skull_real/scores"
-    name = "skull1"
+    path = "/home/mathieu/Dataset/DeepTrack/model/skull_real_no_pretrain/scores"
+    name = "skull18"
     path_csv = os.path.join(path, "{}_eval.csv".format(name))
 
     fig, axes = plt.subplots(nrows=2, ncols=1)

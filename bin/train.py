@@ -118,7 +118,7 @@ def config_model(data, dataset):
     convo1_size = int(data["training_param"]["convo1_size"])
     convo2_size = int(data["training_param"]["convo2_size"])
     model_finetune = data["model_finetune"]
-    model_class = PyTorchHelpers.load_lua_class("deeptracking/tracker/rgbd_tracker.lua", 'RGBDTracker')
+    model_class = PyTorchHelpers.load_lua_class(data["training_param"]["file"], 'RGBDTracker')
     tracker_model = model_class('cuda')
 
     tracker_model.set_configs({

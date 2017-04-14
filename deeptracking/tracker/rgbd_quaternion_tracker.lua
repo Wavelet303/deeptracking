@@ -65,10 +65,15 @@ function RGBDTracker:build_model()
 
     local convo = self:build_convo(8, c1_filter_qty, c2_filter_qty, view_size)
 
+    local merge = nn:ParallelTable()
+    merge:add(convo)
+    merge:add(nn.Identity())
+
     self.net = nn:Sequential()
-    self.net:add(convo)
+    self.net:add(merge)
+    self.net:add(nn.JoinTable(1, 1))
     self.net:add(nn.Dropout(0.5))
-    self.net:add(nn.Linear(c2_filter_qty * view_size, linear_size))
+    self.net:add(nn.Linear(c2_filter_qty * view_size + 4, linear_size))
     self.net:add(nn.ELU())
     self.net:add(nn.Linear(linear_size, 6))
     self.net:add(nn.Tanh())
@@ -77,7 +82,9 @@ end
 function RGBDTracker:convert_inputs(inputs)
     self.inputTensor = self:setup_tensor(inputs[1], self.inputTensor)
     self.priorTensor = self:setup_tensor(inputs[2][{ {},{4,7} }], self.priorTensor)
-    local ret = {self.inputTensor[{{}, {1,4}, {}, {}}], self.inputTensor[{{}, {5,8}, {}, {}}] }
+    local ret = {{self.inputTensor[{{}, {1,4}, {}, {}}], self.inputTensor[{{}, {5,8}, {}, {}}] }, self.priorTensor }
+    --local ret = {self.inputTensor[{{}, {1,4}, {}, {}}], self.inputTensor[{{}, {5,8}, {}, {}}] }
+
     return ret
 end
 

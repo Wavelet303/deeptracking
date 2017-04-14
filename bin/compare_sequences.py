@@ -6,7 +6,7 @@ import os
 matplotlib.style.use('ggplot')
 
 if __name__ == '__main__':
-    path = "/home/mathieu/Dataset/DeepTrack/model/skull_real/scores"
+    path = "/home/mathieu/Dataset/DeepTrack/model/skull_real_no_pretrain/scores"
     scores_file = [f for f in os.listdir(path) if "score" in f]
     df = pd.read_csv(os.path.join(path, scores_file[0])).T
     sequences_data = pd.DataFrame(columns=df.iloc[0])
@@ -14,7 +14,7 @@ if __name__ == '__main__':
         index = int(re.findall(r'\d+', file)[0])
         df = pd.read_csv(os.path.join(path, file), index_col=0).T
         sequences_data.loc[index] = list(df.loc["mean"])
-    
+
     sequences_data.sort_index(axis=0, inplace=True)
     x = sequences_data.index.values
     y = list(sequences_data.columns)
