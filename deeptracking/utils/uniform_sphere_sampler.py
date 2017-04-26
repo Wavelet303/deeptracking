@@ -21,7 +21,7 @@ class UniformSphereSampler:
     @staticmethod
     def random_direction():
         theta = random.uniform(0, 1) * math.pi * 2
-        phi = math.acos(1 - (2 * (random.uniform(0, 1))))
+        phi = math.acos(1 - (1 * (random.uniform(0, 1))))
         return UniformSphereSampler.sph2cart(phi, theta, 1)
 
     def get_random(self):

@@ -14,7 +14,7 @@ import numpy as np
 from deeptracking.utils.data_logger import DataLogger
 import os
 ESCAPE_KEY = 1048603
-
+UNITY_DEMO = True
 
 def log_pose_difference(prediction, ground_truth, logger):
     prediction_params = prediction.to_parameters(isDegree=True)
@@ -26,6 +26,20 @@ def log_pose_difference(prediction, ground_truth, logger):
     logger.add_row(logger.get_dataframes_id()[0], difference)
 
 if __name__ == '__main__':
+
+    if UNITY_DEMO:
+        TCP_IP = "0.0.0.0"
+        TCP_PORT = 9050
+        print("Activating Unity server on {}:{}".format(TCP_IP, TCP_PORT))
+        sys.path.insert(0, '/home/mathieu/source/Camera_streamer_for_Unity')
+        import pycam_server.server as server
+        from pycam_server.frame import ExampleMetadata
+
+        meta = ExampleMetadata()
+        unity_server = server.Server(TCP_IP, TCP_PORT)
+        while not unity_server.has_connection():
+            time.sleep(1)
+
     args = ArgumentParser(sys.argv[1:])
     if args.help:
         args.print_help()
@@ -70,6 +84,7 @@ if __name__ == '__main__':
         use_ground_truth_pose = False
 
     tracker = DeepTracker(camera,
+                          data["model_file"],
                           OBJECT_WIDTH,
                           MODEL_3D_PATH,
                           MODEL_3D_AO_PATH,
@@ -96,7 +111,8 @@ if __name__ == '__main__':
                 previous_pose = ground_truth_pose.inverse()
             # process pose estimation of current frame given last pose
             start_time = time.time()
-            predicted_pose = tracker.estimate_current_pose(previous_pose, current_rgb, current_depth, debug=args.verbose)
+            for i in range(4):
+                predicted_pose = tracker.estimate_current_pose(previous_pose, current_rgb, current_depth, debug=args.verbose)
             print("Estimation processing time : {}".format(time.time() - start_time))
             screen = tracker.get_debug_screen(previous_rgb)
             if not USE_SENSOR:
@@ -104,6 +120,16 @@ if __name__ == '__main__':
             previous_pose = predicted_pose
 
         previous_rgb = current_rgb
+        if UNITY_DEMO:
+            if meta.camera_parameters is None:
+                meta.camera_parameters = camera.copy()
+                meta.camera_parameters.distortion = meta.camera_parameters.distortion.tolist()
+            meta.object_pose = []
+            if previous_pose:
+                params = previous_pose.inverse().to_parameters()
+                meta.add_object_pose(*params)
+            unity_server.send_data_to_clients(current_rgb[:, :, ::-1], meta)
+
         cv2.imshow("Debug", screen[:, :, ::-1])
         key = cv2.waitKey(1)
         key_chr = chr(key & 255)

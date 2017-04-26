@@ -6,7 +6,7 @@ import os
 matplotlib.style.use('ggplot')
 
 if __name__ == '__main__':
-    path = "/home/mathieu/Dataset/DeepTrack/model/skull_real_no_pretrain/scores"
+    path = "/home/mathieu/Dataset/DeepTrack/model/mixed_skull/scores"
     scores_file = [f for f in os.listdir(path) if "score" in f]
     df = pd.read_csv(os.path.join(path, scores_file[0])).T
     sequences_data = pd.DataFrame(columns=df.iloc[0])

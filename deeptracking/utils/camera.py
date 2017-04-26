@@ -63,7 +63,8 @@ class Camera:
     def copy(self):
         return Camera((self.focal_x, self.focal_y),
                       (self.center_x, self.center_y),
-                      (self.width, self.height))
+                      (self.width, self.height),
+                      self.distortion)
 
     def matrix(self):
         return np.array([[self.focal_x, 0, self.center_x],

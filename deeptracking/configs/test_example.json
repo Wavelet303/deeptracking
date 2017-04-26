@@ -7,6 +7,7 @@
       "object_width": "250"
     }
   ],
+  "model_file": "deeptracking/tracker/rgbd_tracker.lua",
   "output_path": "path/to/output/eval/data",
   "shader_path": "deeptracking/data/shaders",
   "model_path": "path/to/model",

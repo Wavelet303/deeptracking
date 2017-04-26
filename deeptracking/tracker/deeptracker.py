@@ -8,7 +8,7 @@ import numpy as np
 
 
 class DeepTracker(TrackerBase):
-    def __init__(self, camera, object_width=0, model_3d_path="", model_3d_ao_path="", shader_path=""):
+    def __init__(self, camera, model_path, object_width=0, model_3d_path="", model_3d_ao_path="", shader_path=""):
         self.image_size = None
         self.tracker_model = None
         self.translation_range = None
@@ -21,7 +21,7 @@ class DeepTracker(TrackerBase):
         self.object_width = object_width
 
         # setup model
-        model_class = PyTorchHelpers.load_lua_class("deeptracking/tracker/rgbd_quaternion_tracker.lua", 'RGBDTracker')
+        model_class = PyTorchHelpers.load_lua_class(model_path, 'RGBDTracker')
         self.tracker_model = model_class('cuda')
 
         if model_3d_path != "" and model_3d_ao_path != "" and shader_path != "":

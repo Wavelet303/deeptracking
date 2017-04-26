@@ -101,7 +101,7 @@ if __name__ == '__main__':
         os.mkdir(OUTPUT_PATH)
 
     real_dataset = Dataset(REAL_PATH)
-    real_dataset.load(viewpoint_file_only=True)
+    real_dataset.load()
     camera = Camera.load_from_json(real_dataset.path)
     real_dataset.camera = camera
     output_dataset = Dataset(OUTPUT_PATH, frame_class=data["save_type"])
@@ -135,6 +135,7 @@ if __name__ == '__main__':
             random_transform = Transform.random((-TRANSLATION_RANGE, TRANSLATION_RANGE),
                                                 (-ROTATION_RANGE, ROTATION_RANGE))
             inverted_random_transform = Transform.from_parameters(*(-random_transform.to_parameters()))
+
             previous_pose = rotated_pose.copy()
             previous_pose = combine_view_transform(previous_pose, inverted_random_transform)
 
