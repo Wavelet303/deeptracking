@@ -6,8 +6,6 @@ from deeptracking.utils.argumentparser import ArgumentParser
 from deeptracking.data.dataset import Dataset
 from deeptracking.tracker.deeptracker import DeepTracker
 from deeptracking.utils.filters import MeanFilter
-from deeptracking.utils.transform import Transform
-import deeptracking.utils.angles as ea
 import sys
 import json
 import time
@@ -17,7 +15,7 @@ import numpy as np
 from deeptracking.utils.data_logger import DataLogger
 import os
 ESCAPE_KEY = 1048603
-UNITY_DEMO = True
+UNITY_DEMO = False
 
 def log_pose_difference(prediction, ground_truth, logger):
     prediction_params = prediction.to_parameters(isDegree=True)
