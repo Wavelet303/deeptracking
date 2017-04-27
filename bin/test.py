@@ -5,6 +5,9 @@ from deeptracking.detector.detector_aruco import ArucoDetector
 from deeptracking.utils.argumentparser import ArgumentParser
 from deeptracking.data.dataset import Dataset
 from deeptracking.tracker.deeptracker import DeepTracker
+from deeptracking.utils.filters import MeanFilter
+from deeptracking.utils.transform import Transform
+import deeptracking.utils.angles as ea
 import sys
 import json
 import time
@@ -39,6 +42,8 @@ if __name__ == '__main__':
         unity_server = server.Server(TCP_IP, TCP_PORT)
         while not unity_server.has_connection():
             time.sleep(1)
+        output_rot_filter = MeanFilter(2)
+        output_trans_filter = MeanFilter(2)
 
     args = ArgumentParser(sys.argv[1:])
     if args.help:
@@ -111,8 +116,9 @@ if __name__ == '__main__':
                 previous_pose = ground_truth_pose.inverse()
             # process pose estimation of current frame given last pose
             start_time = time.time()
-            for i in range(4):
+            for i in range(2):
                 predicted_pose = tracker.estimate_current_pose(previous_pose, current_rgb, current_depth, debug=args.verbose)
+
             print("Estimation processing time : {}".format(time.time() - start_time))
             screen = tracker.get_debug_screen(previous_rgb)
             if not USE_SENSOR:
@@ -127,6 +133,8 @@ if __name__ == '__main__':
             meta.object_pose = []
             if previous_pose:
                 params = previous_pose.inverse().to_parameters()
+                params[3:] = output_rot_filter.compute_mean(params[3:])
+                params[:3] = output_trans_filter.compute_mean(params[:3])
                 meta.add_object_pose(*params)
             unity_server.send_data_to_clients(current_rgb[:, :, ::-1], meta)
 

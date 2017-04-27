@@ -22,11 +22,11 @@ def mask_real_image(color, depth, depth_render):
     masked_rgb = color * mask
 
     masked_hsv = cv2.cvtColor(masked_rgb, cv2.COLOR_BGR2HSV)
-    saturation_mask = (masked_hsv[:, :, 2] <= 255)[:, :, np.newaxis].astype(np.uint8)
+    saturation_mask = (masked_hsv[:, :, 2] <= SATURATION_THRESHOLD)[:, :, np.newaxis].astype(np.uint8)
     total_mask = np.bitwise_and(mask, saturation_mask)
 
     masked_color = color * total_mask
-    masked_depth = depth * total_mask[:, :, 0]
+    masked_depth = depth[:total_mask.shape[0], :total_mask.shape[1]] * total_mask[:, :, 0]
     return masked_color, masked_depth
 
 
@@ -96,6 +96,7 @@ if __name__ == '__main__':
     SPHERE_MAX_RADIUS = float(data["sphere_max_radius"])
     IMAGE_SIZE = (int(data["image_size"]), int(data["image_size"]))
     PRELOAD = data["preload"] == "True"
+    SATURATION_THRESHOLD = int(data["saturation_threshold"])
 
     if not os.path.exists(OUTPUT_PATH):
         os.mkdir(OUTPUT_PATH)

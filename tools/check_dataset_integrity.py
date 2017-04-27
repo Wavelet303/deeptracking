@@ -12,7 +12,7 @@ if __name__ == '__main__':
     dataset_path = "/home/mathieu/Dataset/DeepTrack/skull"
 
     dataset = Dataset(dataset_path)
-    if not dataset.load(load_mean_std=False):
+    if not dataset.load():
         print("[Error]: Train dataset empty")
         sys.exit(-1)
 
