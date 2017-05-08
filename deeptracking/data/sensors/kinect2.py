@@ -43,6 +43,4 @@ class Kinect2(SensorBase):
         self.frame_listener.release()
 
         depth_frame[depth_frame == float('inf')] = 0
-        rgb_frame = cv2.resize(rgb_frame, (self.camera.width, self.camera.height))
-        depth_frame = cv2.resize(depth_frame, (self.camera.width, self.camera.height))
         return rgb_frame[:, :, :3], depth_frame

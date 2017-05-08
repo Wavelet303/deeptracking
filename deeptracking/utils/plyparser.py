@@ -75,3 +75,13 @@ class PlyParser:
     @staticmethod
     def recarray_to_array(array, type):
         return array.view(type).reshape(array.shape + (-1,))
+
+    @staticmethod
+    def save_points(points, path):
+        vertex = np.zeros(points.shape[0], dtype=([('x', 'f4'), ('y', 'f4'), ('z', 'f4')]))
+        vertex.fill(255)
+        vertex['x'] = points[:, 0]
+        vertex['y'] = points[:, 1]
+        vertex['z'] = points[:, 2]
+        el = PlyElement.describe(vertex, 'vertex')
+        PlyData([el], text=ascii).write(path)

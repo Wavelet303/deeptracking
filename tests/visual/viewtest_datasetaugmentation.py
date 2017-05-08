@@ -5,8 +5,8 @@ from deeptracking.data.dataaugmentation import DataAugmentation
 
 if __name__ == '__main__':
 
-    object_path = "/home/mathieu/Dataset/DeepTrack/dragon/test"
-    occluder_path = "/home/mathieu/Dataset/DeepTrack/test/hand"
+    object_path = "/home/mathieu/Dataset/DeepTrack/mixed/test"
+    occluder_path = "/home/mathieu/Dataset/DeepTrack/mixed/test"
     background_path = "/home/mathieu/Dataset/RGBD/SUN3D"
 
     object_dataset = Dataset(object_path)

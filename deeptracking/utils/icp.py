@@ -108,4 +108,4 @@ def icp(A, B, init_pose=None, max_iterations=20, tolerance=0.001):
     # calculate final transformation
     T, _, _ = best_fit_transform(A, src[0:3, :].T)
 
-    return Transform.Transform.from_matrix(T), distances
+    return Transform.from_matrix(T), distances

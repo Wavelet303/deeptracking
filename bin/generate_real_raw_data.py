@@ -2,21 +2,19 @@ from deeptracking.detector.detector_aruco import ArucoDetector
 from deeptracking.utils.argumentparser import ArgumentParser
 from deeptracking.data.sensors.kinect2 import Kinect2
 from deeptracking.data.dataset_utils import rect_from_pose, image_blend
-from deeptracking.utils.camera import Camera
 from deeptracking.utils.icp import icp
+from deeptracking.utils.plyparser import PlyParser
 from deeptracking.utils.transform import Transform
 from deeptracking.data.dataset import Dataset
-from deeptracking.data.frame import Frame, FrameNumpy
-from deeptracking.data.dataset_utils import combine_view_transform
+from deeptracking.data.frame import Frame
 from deeptracking.data.modelrenderer import ModelRenderer, InitOpenGL
-from deeptracking.data.dataset_utils import normalize_scale
-from deeptracking.utils.uniform_sphere_sampler import UniformSphereSampler
 import sys
 import json
 import os
 import cv2
 import math
 import numpy as np
+import time
 
 ESCAPE_KEY = 1048603
 NUM_PAD_1_KEY = 1114033
@@ -28,10 +26,13 @@ NUM_PAD_6_KEY = 1114038
 NUM_PAD_7_KEY = 1114039
 NUM_PAD_8_KEY = 1114040
 NUM_PAD_9_KEY = 1114041
+NUM_PLUS_KEY = 1114027
+NUM_MINUS_KEY = 1114029
 ARROW_LEFT_KEY = 1113937
 ARROW_UP_KEY = 1113938
 ARROW_RIGHT_KEY = 1113939
 ARROW_DOWN_KEY = 1113940
+
 
 
 def lerp(value, maximum, start_point, end_point):
@@ -49,23 +50,35 @@ def show_occlusion(detection, rgb, depth, camera, bb_width):
     cv2.rectangle(rgb, tuple(pixels[0][::-1]), tuple(pixels[3][::-1]), (0, 0, 255), 2)
 
 
-def clean_point_cloud(points, pose):
+def clean_point_cloud(points):
     # remove zeros
     points = points[np.all(points != 0, axis=1)]
-    # cam to board coordinsta system
+
+    return points
+
+
+def crop_point_cloud(points, radius=0.15):
+    # board data only
+    points = points[points[:, 0] < radius]
+    points = points[points[:, 0] > -radius]
+    points = points[points[:, 1] < radius]
+    points = points[points[:, 1] > -radius]
+    points = points[points[:, 2] > 0.01]
+    return points
+
+
+def transform_pointcloud(points, pose):
     transform = pose.inverse()
     scale = Transform.scale(1, -1, -1)
     transform.combine(scale)
     points = transform.rotation.dot(points)
     points = transform.translation.dot(points)
-    # board data only
-    #radius = 0.15
-    #points = points[points[:, 0] < radius]
-    #points = points[points[:, 0] > -radius]
-    #points = points[points[:, 1] < radius]
-    #points = points[points[:, 1] > -radius]
-    #points = points[points[:, 2] > 0.01]
     return points
+
+alpha = 1
+def trackbar(x):
+    global alpha
+    alpha = x/100
 
 if __name__ == '__main__':
 
@@ -100,22 +113,26 @@ if __name__ == '__main__':
     vpRender = ModelRenderer(MODELS[0]["model_path"], SHADER_PATH, camera, window)
     vpRender.load_ambiant_occlusion_map(MODELS[0]["ambiant_occlusion_model"])
 
+    cv2.namedWindow('image')
+    cv2.createTrackbar('transparency', 'image', 0, 100, trackbar)
+
     # todo, read from file?
     detection_offset = Transform()
     rgbd_record = False
     save_next_rgbd_pose = False
     lock_offset = False
     if PRELOAD:
-        dataset.load(load_mean_std=False)
+        dataset.load()
         if dataset.size():
             detection_offset = Transform.from_matrix(np.load(os.path.join(dataset.path, "offset.npy")))
             lock_offset = True
 
     while True:
+        start_time = time.time()
         bgr, depth = sensor.get_frame()
         bgr = cv2.resize(bgr, (int(1920 / ratio), int(1080 / ratio)))
         depth = cv2.resize(depth, (int(1920 / ratio), int(1080 / ratio)))
-        screen = bgr
+        screen = bgr.copy()
 
         if rgbd_record:
             # here we add a dummy pose, we will compute the pose as a post operation
@@ -137,8 +154,11 @@ if __name__ == '__main__':
                 rgb_render, depth_render = vpRender.render(detection.transpose())
                 bgr_render = rgb_render[:, :, ::-1].copy()
                 bgr_render = cv2.resize(bgr_render, (int(1920 / ratio), int(1080 / ratio)))
-                screen = image_blend(bgr_render, screen)
+                blend = image_blend(bgr_render, screen)
+                screen = cv2.addWeighted(screen, 1 - alpha, blend, alpha, 1)
 
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        cv2.putText(screen, "Fps : {:10.4f}".format(1./(time.time() - start_time)), (10, 50), font, 1, (255, 255, 255), 2, cv2.LINE_AA)
         cv2.imshow("image", screen[:, :, ::-1])
         key = cv2.waitKey(1)
         key_chr = chr(key & 255)
@@ -163,14 +183,19 @@ if __name__ == '__main__':
             elif key == NUM_PAD_4_KEY:
                 detection_offset.translate(x=-0.001)
             elif key == NUM_PAD_5_KEY:
-                frame_points = camera.backproject_depth(depth)
-                frame_points = clean_point_cloud(frame_points, detection)
-                render_points = camera.backproject_depth(depth_render)
-                render_points = clean_point_cloud(render_points, detection)
-                print(frame_points)
-                print(render_points)
-                transform = icp(frame_points, render_points)
-                print(transform)
+                frame_points = camera.backproject_depth(depth)/1000
+                frame_points = clean_point_cloud(frame_points)
+                frame_points = transform_pointcloud(frame_points, detection)
+                frame_points = crop_point_cloud(frame_points)
+
+                render_points = camera.backproject_depth(depth_render)/1000
+                render_points = clean_point_cloud(render_points)
+                PlyParser.save_points(render_points, "render.ply")
+                render_points = transform_pointcloud(render_points, detection)
+
+                new_offset, _ = icp(frame_points, render_points, max_iterations=10, tolerance=0.1)
+                detection_offset.combine(new_offset)
+                #print(transform)
                 #detection_offset = Transform.from_parameters(-0.0017330130795, 0.00853765942156, -0.102324359119,
                 #                0.242059546511, -1.22307961834, 2.01838164219,
                 #                True)
