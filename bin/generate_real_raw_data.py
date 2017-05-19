@@ -75,6 +75,18 @@ def transform_pointcloud(points, pose):
     points = transform.translation.dot(points)
     return points
 
+def register_pointclouds(cloud1, cloud2):
+    frame_points = clean_point_cloud(cloud1)
+    frame_points = transform_pointcloud(frame_points, detection)
+    frame_points = crop_point_cloud(frame_points)
+
+    render_points = clean_point_cloud(cloud2)
+    PlyParser.save_points(render_points, "render.ply")
+    render_points = transform_pointcloud(render_points, detection)
+
+    diff_transform, _ = icp(frame_points, render_points, max_iterations=10, tolerance=0.1)
+    return diff_transform
+
 alpha = 1
 def trackbar(x):
     global alpha
@@ -184,21 +196,10 @@ if __name__ == '__main__':
                 detection_offset.translate(x=-0.001)
             elif key == NUM_PAD_5_KEY:
                 frame_points = camera.backproject_depth(depth)/1000
-                frame_points = clean_point_cloud(frame_points)
-                frame_points = transform_pointcloud(frame_points, detection)
-                frame_points = crop_point_cloud(frame_points)
-
                 render_points = camera.backproject_depth(depth_render)/1000
-                render_points = clean_point_cloud(render_points)
-                PlyParser.save_points(render_points, "render.ply")
-                render_points = transform_pointcloud(render_points, detection)
-
-                new_offset, _ = icp(frame_points, render_points, max_iterations=10, tolerance=0.1)
+                new_offset = register_pointclouds(frame_points, render_points)
                 detection_offset.combine(new_offset)
-                #print(transform)
-                #detection_offset = Transform.from_parameters(-0.0017330130795, 0.00853765942156, -0.102324359119,
-                #                0.242059546511, -1.22307961834, 2.01838164219,
-                #                True)
+
             elif key == NUM_PAD_6_KEY:
                 detection_offset.translate(x=0.001)
             elif key == NUM_PAD_7_KEY:
