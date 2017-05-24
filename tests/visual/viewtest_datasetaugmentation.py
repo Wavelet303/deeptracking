@@ -5,7 +5,7 @@ from deeptracking.data.dataaugmentation import DataAugmentation
 
 if __name__ == '__main__':
 
-    object_path = "/home/mathieu/Dataset/DeepTrack/mixed/test"
+    object_path = "/home/mathieu/Dataset/DeepTrack/skull/train_cyclegan"
     occluder_path = "/home/mathieu/Dataset/DeepTrack/mixed/test"
     background_path = "/home/mathieu/Dataset/RGBD/SUN3D"
 
@@ -23,6 +23,7 @@ if __name__ == '__main__':
 
     for i in range(object_dataset.size()):
         rgb, depth, pose = object_dataset.load_image(i)
+        rgb, depth, label = object_dataset.load_pair(i, 0)
         rgb_augmented, depth_augmented = data_augmentation.augment(rgb, depth, pose, True)
 
         plt.figure(0)
@@ -34,9 +35,9 @@ if __name__ == '__main__':
         plt.show()
 
         plt.figure(0)
-        plt.imshow(depth, cmap="gray")
+        plt.imshow(depth)
         plt.figure(1)
-        plt.imshow(depth_augmented, cmap="gray")
+        plt.imshow(depth_augmented)
         plt.figure(2)
         plt.imshow(depth.astype(np.int32) - depth_augmented.astype(np.int32))
         plt.show()

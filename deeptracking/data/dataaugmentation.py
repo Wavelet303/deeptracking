@@ -54,13 +54,13 @@ class DataAugmentation:
         if real and self.occluder:
             if random.uniform(0, 1) < 0.75:
                 rand_id = random.randint(0, self.occluder.size() - 1)
-                occluder_rgb, occluder_depth, pose = self.occluder.load_image(rand_id)
+                occluder_rgb, occluder_depth, occ_pose = self.occluder.load_image(rand_id)
                 if random.randint(0, 1):
                     occluder_rgb, occluder_depth, _ = self.occluder.load_pair(rand_id, 0)
                 occluder_depth = occluder_depth.astype(np.float32)
                 # Z offset of occluder to be closer to the occluded object ( with random distance in front of the object)
-                offset = pose.matrix[2, 3] - prior.matrix[2, 3] + random.uniform(-0.07, -0.01)
-                occluder_depth += offset * 1000
+                offset = -occ_pose.matrix[2, 3] + prior.matrix[2, 3] - random.uniform(0.07, 0.01)
+                occluder_depth += offset
 
                 occluder_rgb = self.add_hue_noise(occluder_rgb, 1)
                 occluder_rgb = imresize(occluder_rgb, ret_depth.shape, interp='nearest')
@@ -154,21 +154,26 @@ class DataAugmentation:
         new_depth2 = depth2.copy()
         new_depth1 = depth1.copy()
 
-        new_depth2[np.all(rgb2 == 0, axis=2)] = -100000
-        new_depth1[np.all(rgb1 == 0, axis=2)] = -100000
+        rgb1_mask = np.all(rgb1 == 0, axis=2)
+        rgb2_mask = np.all(rgb2 == 0, axis=2)
+
+        rgb1_mask = ndimage.binary_dilation(rgb1_mask)
+
+        new_depth2[rgb2_mask] = -100000
+        new_depth1[rgb1_mask] = -100000
 
         mask = (new_depth1 < new_depth2)
         pos_mask = mask.astype(np.uint8)
         neg_mask = (mask == False).astype(np.uint8)
 
-        masked_occluder = rgb1 * pos_mask[:, :, np.newaxis]
-        masked_object = rgb2 * neg_mask[:, :, np.newaxis]
+        masked_rgb_occluder = rgb1 * pos_mask[:, :, np.newaxis]
+        masked_rgb_object = rgb2 * neg_mask[:, :, np.newaxis]
 
-        blend_rgb = masked_occluder + masked_object
+        masked_depth_occluder = depth1 * pos_mask
+        masked_depth_object = depth2 * neg_mask
 
-        masked_occluder = depth1 * pos_mask
-        masked_object = depth2 * neg_mask
-        blend_depth = masked_occluder + masked_object
+        blend_rgb = masked_rgb_occluder + masked_rgb_object
+        blend_depth = masked_depth_occluder + masked_depth_object
 
         return blend_rgb, blend_depth
 

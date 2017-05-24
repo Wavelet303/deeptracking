@@ -84,6 +84,26 @@ function ModelBase:set_backend(module)
     return module
 end
 
+function ModelBase:convert_backend(backend)
+    self.backend = backend
+    if self.backend == 'cuda' then
+        self.net = self.net:cuda()
+        for k,v in pairs(self.config) do
+            if type(v) == "userdata" then
+                self.config[k] = v:cuda()
+            end
+        end
+    else
+        self.net = self.net:float()
+            for k,v in pairs(self.config) do
+            if type(v) == "userdata" then
+                self.config[k] = v:float()
+            end
+        end
+    end
+    return
+end
+
 function ModelBase:convert_inputs(inputs)
     -- this function is used when you have particular inputs, it handles backend transfer and any formating to the input data
     error("convert_inputs not defined!")
