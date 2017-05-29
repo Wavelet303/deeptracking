@@ -130,7 +130,7 @@ if __name__ == '__main__':
                 meta.camera_parameters.distortion = meta.camera_parameters.distortion.tolist()
             meta.object_pose = []
             if previous_pose:
-                params = previous_pose.inverse().to_parameters()
+                params = previous_pose.to_parameters()
                 params[3:] = output_rot_filter.compute_mean(params[3:])
                 params[:3] = output_trans_filter.compute_mean(params[:3])
                 meta.add_object_pose(*params)
