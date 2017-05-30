@@ -94,7 +94,8 @@ if __name__ == '__main__':
                           SHADER_PATH)
     tracker.load(MODEL_PATH)
     tracker.print()
-    previous_frame, previous_pose = next(frame_generator)           #in camera frame
+    # Frames from the generator are in camera coordinate
+    previous_frame, previous_pose = next(frame_generator)
     previous_rgb, previous_depth = previous_frame.get_rgb_depth(frame_download_path)
 
     data_logger = DataLogger()
@@ -116,7 +117,7 @@ if __name__ == '__main__':
             start_time = time.time()
             for i in range(2):
                 predicted_pose = tracker.estimate_current_pose(previous_pose, current_rgb, current_depth, debug=args.verbose)
-                previous_pose = predicted_pose                      #all in camera frame
+                previous_pose = predicted_pose
             print("Estimation processing time : {}".format(time.time() - start_time))
             screen = tracker.get_debug_screen(previous_rgb)
             if not USE_SENSOR:
