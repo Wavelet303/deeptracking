@@ -56,15 +56,15 @@ class DeepTracker(TrackerBase):
         self.tracker_model.set_configs(configs)
 
     def estimate_current_pose(self, previous_pose, current_rgb, current_depth, debug=False):
-        render_rgb, render_depth = self.renderer.render(previous_pose.inverse().transpose())
+        render_rgb, render_depth = self.renderer.render(previous_pose.transpose())
         # todo implement this part on gpu...
-        rgbA, depthA = normalize_scale(render_rgb, render_depth, previous_pose, self.camera, self.image_size,
+        rgbA, depthA = normalize_scale(render_rgb, render_depth, previous_pose.inverse(), self.camera, self.image_size,
                                        self.object_width)
-        rgbB, depthB = normalize_scale(current_rgb, current_depth, previous_pose, self.camera, self.image_size,
+        rgbB, depthB = normalize_scale(current_rgb, current_depth, previous_pose.inverse(), self.camera, self.image_size,
                                        self.object_width)
 
-        depthA = normalize_depth(depthA, previous_pose.inverse())
-        depthB = normalize_depth(depthB, previous_pose.inverse())
+        depthA = normalize_depth(depthA, previous_pose)
+        depthB = normalize_depth(depthB, previous_pose)
 
         if debug:
             show_frames(rgbA, depthA, rgbB, depthB)
@@ -74,13 +74,13 @@ class DeepTracker(TrackerBase):
         self.input_buffer[0, 3, :, :] = depthA
         self.input_buffer[0, 4:7, :, :] = rgbB
         self.input_buffer[0, 7, :, :] = depthB
-        self.prior_buffer[0] = np.array(previous_pose.inverse().to_parameters(isQuaternion=True))
+        self.prior_buffer[0] = np.array(previous_pose.to_parameters(isQuaternion=True))
         prediction = self.tracker_model.test([self.input_buffer, self.prior_buffer]).asNumpyTensor()
         prediction = unnormalize_label(prediction, self.translation_range, self.rotation_range)
         if debug:
             print("Prediction : {}".format(prediction))
         prediction = Transform.from_parameters(*prediction[0], is_degree=True)
-        current_pose = combine_view_transform(previous_pose.inverse(), prediction).inverse()
+        current_pose = combine_view_transform(previous_pose, prediction)
         self.debug_rgb = render_rgb
         return current_pose
 
