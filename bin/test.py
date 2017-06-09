@@ -17,6 +17,7 @@ import os
 ESCAPE_KEY = 1048603
 UNITY_DEMO = False
 
+
 def log_pose_difference(prediction, ground_truth, logger):
     prediction_params = prediction.to_parameters(isDegree=True)
     ground_truth_params = ground_truth.to_parameters(isDegree=True)
