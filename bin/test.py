@@ -95,9 +95,10 @@ if __name__ == '__main__':
                           SHADER_PATH)
     tracker.load(MODEL_PATH)
     tracker.print()
+    # Frames from the generator are in camera coordinate
     previous_frame, previous_pose = next(frame_generator)
     previous_rgb, previous_depth = previous_frame.get_rgb_depth(frame_download_path)
-    previous_pose = previous_pose.inverse()
+
     data_logger = DataLogger()
     data_logger.create_dataframe("{}_eval".format(model_name), ("Tx", "Ty", "Tz", "Rx", "Ry", "Rz"))
     for i, (current_frame, ground_truth_pose) in enumerate(frame_generator):
@@ -117,7 +118,7 @@ if __name__ == '__main__':
             start_time = time.time()
             for i in range(2):
                 predicted_pose = tracker.estimate_current_pose(previous_pose, current_rgb, current_depth, debug=args.verbose)
-
+                previous_pose = predicted_pose
             print("Estimation processing time : {}".format(time.time() - start_time))
             screen = tracker.get_debug_screen(previous_rgb)
             if not USE_SENSOR:
@@ -131,7 +132,7 @@ if __name__ == '__main__':
                 meta.camera_parameters.distortion = meta.camera_parameters.distortion.tolist()
             meta.object_pose = []
             if previous_pose:
-                params = previous_pose.inverse().to_parameters()
+                params = previous_pose.to_parameters()
                 params[3:] = output_rot_filter.compute_mean(params[3:])
                 params[:3] = output_trans_filter.compute_mean(params[:3])
                 meta.add_object_pose(*params)
