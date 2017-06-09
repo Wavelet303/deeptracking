@@ -79,7 +79,9 @@ def config_datasets(data):
     occluder_path = data["data_augmentation"]["occluder_path"]
     background_path = data["data_augmentation"]["background_path"]
     blur_noise = int(data["data_augmentation"]["blur_noise"])
-    hue_noise = float(data["data_augmentation"]["hue_noise"])
+    h_noise = float(data["data_augmentation"]["h_noise"])
+    s_noise = float(data["data_augmentation"]["s_noise"])
+    v_noise = float(data["data_augmentation"]["v_noise"])
 
     data_augmentation = DataAugmentation()
     data_augmentation.set_rgb_noise(rgb_noise)
@@ -89,7 +91,7 @@ def config_datasets(data):
     if background_path != "":
         data_augmentation.set_background(background_path)
     data_augmentation.set_blur(blur_noise)
-    data_augmentation.set_hue_noise(hue_noise)
+    data_augmentation.set_hsv_noise(h_noise, s_noise, v_noise)
 
     train_dataset = Dataset(train_path, minibatch_size=minibatch_size)
     if not train_dataset.load():

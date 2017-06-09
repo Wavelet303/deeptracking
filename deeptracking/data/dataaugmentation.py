@@ -18,7 +18,9 @@ class DataAugmentation:
         self.depth_noise = None
         self.blur_kernel = None
         self.jitter = None
-        self.hue_noise = None
+        self.h_noise = None
+        self.s_noise = None
+        self.v_noise = None
 
     def set_background(self, path):
         self.background = RGBDDataset(path)
@@ -33,13 +35,18 @@ class DataAugmentation:
     def set_depth_noise(self, gaussian_std):
         self.depth_noise = gaussian_std
 
-    def set_hue_noise(self, offset):
+    def set_hsv_noise(self, h_noise, s_noise, v_noise):
         """
         offset is the % of random hue offset distribution
         :param offset:
         :return:
         """
-        self.hue_noise = offset
+        self.h_noise = h_noise
+        self.s_noise = s_noise
+        self.v_noise = v_noise
+
+    def set_saturation_noise(self, offset):
+        self.saturation_noise = offset
 
     def set_blur(self, size):
         self.blur_kernel = size
@@ -62,14 +69,13 @@ class DataAugmentation:
                 offset = -occ_pose.matrix[2, 3] + prior.matrix[2, 3] - random.uniform(0.07, 0.01)
                 occluder_depth += offset
 
-                occluder_rgb = self.add_hue_noise(occluder_rgb, 1)
+                occluder_rgb = self.add_hsv_noise(occluder_rgb, 1, 0.1, 0.1)
                 occluder_rgb = imresize(occluder_rgb, ret_depth.shape, interp='nearest')
                 occluder_depth = imresize(occluder_depth, ret_depth.shape, interp='nearest', mode="F").astype(np.int16)
                 ret_rgb, ret_depth = self.depth_blend(ret_rgb, ret_depth, occluder_rgb, occluder_depth)
 
-        if real and self.hue_noise:
-            if random.uniform(0, 1) > 0.05:
-                ret_rgb = self.add_hue_noise(ret_rgb, self.hue_noise)
+        if real:
+            ret_rgb = self.add_hsv_noise(ret_rgb, self.h_noise, self.s_noise, self.v_noise, proba=0.5)
 
         if self.jitter:
             self.x_jitter = random.randint(-self.jitter[0], self.jitter[0])
@@ -106,13 +112,13 @@ class DataAugmentation:
                 ret_depth = self.add_noise(ret_depth, noise)
 
         if real and self.blur_kernel is not None:
-            if random.uniform(0, 1) < 0.75:
+            if random.uniform(0, 1) < 0.4:
                 kernel_size = random.randint(3, self.blur_kernel)
                 kernel = self.gkern(kernel_size)
-                ret_rgb[0, :, :] = scipy.signal.convolve2d(ret_rgb[0, :, :], kernel, mode='same')
-                ret_rgb[1, :, :] = scipy.signal.convolve2d(ret_rgb[1, :, :], kernel, mode='same')
-                ret_rgb[2, :, :] = scipy.signal.convolve2d(ret_rgb[2, :, :], kernel, mode='same')
-            if random.uniform(0, 1) < 0.75:
+                ret_rgb[:, :, 0] = scipy.signal.convolve2d(ret_rgb[:, :, 0], kernel, mode='same')
+                ret_rgb[:, :, 1] = scipy.signal.convolve2d(ret_rgb[:, :, 1], kernel, mode='same')
+                ret_rgb[:, :, 2] = scipy.signal.convolve2d(ret_rgb[:, :, 2], kernel, mode='same')
+            if random.uniform(0, 1) < 0.4:
                 kernel_size = random.randint(3, self.blur_kernel)
                 kernel = self.gkern(kernel_size)
                 ret_depth[:, :] = scipy.signal.convolve2d(ret_depth[:, :], kernel, mode='same')
@@ -131,11 +137,17 @@ class DataAugmentation:
         return copy.astype(type)
 
     @staticmethod
-    def add_hue_noise(rgb, hue_offset):
+    def add_hsv_noise(rgb, hue_offset, saturation_offset, value_offset, proba=0.5):
+        mask = np.all(rgb != 0, axis=2)
         hsv = rgb2hsv(rgb)
-        hsv[:, :, 0] = (hsv[:, :, 0] + random.uniform(-hue_offset, hue_offset)) % 1
+        if random.uniform(0, 1) > proba:
+            hsv[:, :, 0] = (hsv[:, :, 0] + random.uniform(-hue_offset, hue_offset)) % 1
+        if random.uniform(0, 1) > proba-0.1:
+            hsv[:, :, 1] = (hsv[:, :, 1] + random.uniform(-saturation_offset, saturation_offset)) % 1
+        if random.uniform(0, 1) > proba-0.1:
+            hsv[:, :, 2] = (hsv[:, :, 2] + random.uniform(-value_offset, value_offset)) % 1
         rgb = hsv2rgb(hsv) * 255
-        return rgb.astype(np.uint8)
+        return rgb.astype(np.uint8) * mask[:, :, np.newaxis]
 
     @staticmethod
     def color_blend(rgb1, depth1, rgb2, depth2):
@@ -178,7 +190,7 @@ class DataAugmentation:
         return blend_rgb, blend_depth
 
     @staticmethod
-    def gkern(kernlen=21, nsig=3.5):
+    def gkern(kernlen=21, nsig=2):
         """Returns a 2D Gaussian kernel array."""
 
         interval = (2 * nsig + 1.) / (kernlen)

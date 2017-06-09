@@ -33,7 +33,8 @@ class DeepTracker(TrackerBase):
     def setup_renderer(self, model_3d_path, model_3d_ao_path, shader_path):
         window = InitOpenGL(self.camera.width, self.camera.height)
         self.renderer = ModelRenderer(model_3d_path, shader_path, self.camera, window)
-        self.renderer.load_ambiant_occlusion_map(model_3d_ao_path)
+        if model_3d_ao_path is not None:
+            self.renderer.load_ambiant_occlusion_map(model_3d_ao_path)
 
     def load(self, path):
         self.tracker_model.load(path)
@@ -55,8 +56,14 @@ class DeepTracker(TrackerBase):
     def set_configs_(self, configs):
         self.tracker_model.set_configs(configs)
 
-    def estimate_current_pose(self, previous_pose, current_rgb, current_depth, debug=False):
+    def compute_render(self, previous_pose):
         render_rgb, render_depth = self.renderer.render(previous_pose.transpose())
+        self.debug_rgb = render_rgb
+        return render_rgb, render_depth
+
+    def estimate_current_pose(self, previous_pose, current_rgb, current_depth, debug=False):
+        render_rgb, render_depth = self.compute_render(previous_pose)
+
         # todo implement this part on gpu...
         rgbA, depthA = normalize_scale(render_rgb, render_depth, previous_pose.inverse(), self.camera, self.image_size,
                                        self.object_width)
@@ -81,7 +88,6 @@ class DeepTracker(TrackerBase):
             print("Prediction : {}".format(prediction))
         prediction = Transform.from_parameters(*prediction[0], is_degree=True)
         current_pose = combine_view_transform(previous_pose, prediction)
-        self.debug_rgb = render_rgb
         return current_pose
 
     def get_debug_screen(self, previous_frame):
