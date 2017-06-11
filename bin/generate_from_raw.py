@@ -107,10 +107,11 @@ if __name__ == '__main__':
     real_dataset.camera = camera
     output_dataset = Dataset(OUTPUT_PATH, frame_class=data["save_type"])
     output_dataset.camera = camera
-    window = InitOpenGL(real_dataset.camera.width, real_dataset.camera.height)
+    window_size = (real_dataset.camera.width, real_dataset.camera.height)
+    window = InitOpenGL(*window_size)
 
     model = MODELS[0]
-    vpRender = ModelRenderer(model["model_path"], SHADER_PATH, real_dataset.camera, window)
+    vpRender = ModelRenderer(model["model_path"], SHADER_PATH, real_dataset.camera, window, window_size)
     vpRender.load_ambiant_occlusion_map(model["ambiant_occlusion_model"])
     OBJECT_WIDTH = int(model["object_width"])
 
