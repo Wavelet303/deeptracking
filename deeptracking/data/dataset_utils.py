@@ -62,30 +62,27 @@ def combine_view_transform(vp, view_transform):
     return rand_T
 
 
-def normalize_scale(color, depth, pose, camera, output_size=(100, 100), scale_size=230):
-    pose = pose.inverse()
-    pixels = rect_from_pose(pose, camera, scale_size)
-
+def normalize_scale(color, depth, boundingbox, camera, output_size=(100, 100)):
     # pad zeros if the crop happens outside of original image
     lower_x = 0
     lower_y = 0
     higher_x = 0
     higher_y = 0
-    if pixels[0, 0] < 0:
-        lower_x = -pixels[0, 0]
-        pixels[:, 0] += lower_x
-    if pixels[0, 1] < 0:
-        lower_y = -pixels[0, 1]
-        pixels[:, 1] += lower_y
-    if pixels[1, 0] > camera.width:
-        higher_x = pixels[1, 0] - camera.width
-    if pixels[1, 1] > camera.height:
-        higher_y = pixels[1, 1] - camera.height
+    if boundingbox[0, 0] < 0:
+        lower_x = -boundingbox[0, 0]
+        boundingbox[:, 0] += lower_x
+    if boundingbox[0, 1] < 0:
+        lower_y = -boundingbox[0, 1]
+        boundingbox[:, 1] += lower_y
+    if boundingbox[1, 0] > camera.width:
+        higher_x = boundingbox[1, 0] - camera.width
+    if boundingbox[1, 1] > camera.height:
+        higher_y = boundingbox[1, 1] - camera.height
 
     color = np.pad(color, ((lower_y, higher_y), (lower_x, higher_x), (0, 0)), mode="constant", constant_values=0)
     depth = np.pad(depth, ((lower_y, higher_y), (lower_x, higher_x)), mode="constant", constant_values=0)
-    color_crop = color[pixels[0, 0]:pixels[1, 0], pixels[0, 1]:pixels[2, 1], :]
-    depth_crop = depth[pixels[0, 0]:pixels[1, 0], pixels[0, 1]:pixels[2, 1]].astype(np.float)
+    color_crop = color[boundingbox[0, 0]:boundingbox[1, 0], boundingbox[0, 1]:boundingbox[2, 1], :]
+    depth_crop = depth[boundingbox[0, 0]:boundingbox[1, 0], boundingbox[0, 1]:boundingbox[2, 1]].astype(np.float)
     mask_depth = imresize(depth_crop, output_size, interp='nearest', mode="F") != 0
     mask_rgb = imresize(color_crop, output_size, interp='nearest') != 0
     resized_color_crop = imresize(color_crop, output_size, interp='nearest')
@@ -95,7 +92,7 @@ def normalize_scale(color, depth, pose, camera, output_size=(100, 100), scale_si
 
 def cv_normalize_scale(color, depth, pose, camera, output_size=(100, 100), scale_size=230):
     pose = pose.inverse()
-    pixels = rect_from_pose(pose, camera, scale_size)
+    pixels = compute_2Dboundingbox(pose, camera, scale_size)
 
     # pad zeros if the crop happens outside of original image
     lower_x = 0
@@ -124,17 +121,29 @@ def cv_normalize_scale(color, depth, pose, camera, output_size=(100, 100), scale
     return resized_color_crop * mask_rgb, resized_depth_crop * mask_depth
 
 
-def rect_from_pose(pose, camera, scale_size=230):
-    obj_x = pose.matrix[0, 3] * 1000
-    obj_y = pose.matrix[1, 3] * 1000
-    obj_z = pose.matrix[2, 3] * 1000
+def compute_2Dboundingbox(pose, camera, scale_size=230, scale=(1, 1, 1)):
+    obj_x = pose.matrix[0, 3] * scale[0]
+    obj_y = pose.matrix[1, 3] * scale[1]
+    obj_z = pose.matrix[2, 3] * scale[2]
     offset = scale_size / 2
     points = np.ndarray((4, 3), dtype=np.float)
-    points[0] = [obj_x - offset, -obj_y - offset, -obj_z]
-    points[1] = [obj_x - offset, -obj_y + offset, -obj_z]
-    points[2] = [obj_x + offset, -obj_y - offset, -obj_z]
-    points[3] = [obj_x + offset, -obj_y + offset, -obj_z]
+    points[0] = [obj_x - offset, obj_y - offset, obj_z]
+    points[1] = [obj_x - offset, obj_y + offset, obj_z]
+    points[2] = [obj_x + offset, obj_y - offset, obj_z]
+    points[3] = [obj_x + offset, obj_y + offset, obj_z]
     return camera.project_points(points).astype(np.int32)
+
+
+def compute_axis(pose, camera, scale_size, scale=(1, 1, 1)):
+    points = np.ndarray((4, 3), dtype=np.float)
+    points[0] = [0, 0, 0]
+    points[1] = [1, 0, 0]
+    points[2] = [0, 1, 0]
+    points[3] = [0, 0, 1]
+    points *= 0.1
+    camera_points = pose.dot(points)
+    camera_points[:, 0] *= -1
+    return camera.project_points(camera_points).astype(np.int32)
 
 
 def center_pixel(pose, camera):
@@ -171,10 +180,8 @@ def normalize_channels(rgb, depth, mean, std):
     """
     rgb = rgb.T
     depth = depth.T
-    rgb = rgb.astype(np.float32)
     rgb -= mean[:3, np.newaxis, np.newaxis]
     rgb /= std[:3, np.newaxis, np.newaxis]
-    depth = depth.astype(np.float32)
     depth -= mean[3, np.newaxis, np.newaxis]
     depth /= std[3, np.newaxis, np.newaxis]
     return rgb, depth
@@ -187,7 +194,7 @@ def unormalize_channels(rgb, depth, mean, std):
     rgb += mean[np.newaxis, np.newaxis, :3]
     depth *= std[np.newaxis, np.newaxis, 3]
     depth += mean[np.newaxis, np.newaxis, 3]
-    return rgb.astype(np.uint8), depth
+    return rgb, depth
 
 
 def show_frames(rgbA, depthA, rgbB, depthB):
@@ -212,7 +219,6 @@ def show_frames_from_buffer(image_buffer, mean, std):
 
 
 def normalize_depth(depth, pose):
-    depth = depth.astype(np.float32)
     zero_mask = depth == 0
     depth += pose.matrix[2, 3] * 1000
     depth[zero_mask] = 5000

@@ -1,4 +1,4 @@
-from deeptracking.data.dataset_utils import image_blend, angle_distance
+from deeptracking.data.dataset_utils import image_blend, angle_distance, compute_axis
 from deeptracking.data.sensors.kinect2 import Kinect2
 from deeptracking.data.sensors.viewpointgenerator import ViewpointGenerator
 from deeptracking.detector.detector_aruco import ArucoDetector
@@ -29,6 +29,19 @@ def log_pose_difference(prediction, ground_truth, logger):
         difference[j] = abs(prediction_params[j] - ground_truth_params[j])
         difference[j + 3] = abs(angle_distance(prediction_params[j + 3], ground_truth_params[j + 3]))
     logger.add_row(logger.get_dataframes_id()[0], difference)
+
+
+def draw_debug(img, pose, gt_pose, tracker):
+    axis = compute_axis(pose, tracker.camera, tracker.object_width, scale=(1000, -1000, -1000))
+    axis_gt = compute_axis(gt_pose, tracker.camera, tracker.object_width, scale=(1000, -1000, -1000))
+
+    cv2.line(img, tuple(axis_gt[0, ::-1]), tuple(axis_gt[1, ::-1]), (0, 0, 155), 3)
+    cv2.line(img, tuple(axis_gt[0, ::-1]), tuple(axis_gt[2, ::-1]), (0, 155, 0), 3)
+    cv2.line(img, tuple(axis_gt[0, ::-1]), tuple(axis_gt[3, ::-1]), (155, 0, 0), 3)
+
+    cv2.line(img, tuple(axis[0, ::-1]), tuple(axis[1, ::-1]), (0, 0, 255), 3)
+    cv2.line(img, tuple(axis[0, ::-1]), tuple(axis[2, ::-1]), (0, 255, 0), 3)
+    cv2.line(img, tuple(axis[0, ::-1]), tuple(axis[3, ::-1]), (255, 0, 0), 3)
 
 if __name__ == '__main__':
 
@@ -91,13 +104,8 @@ if __name__ == '__main__':
         frame_generator = gen(video_data.data_pose)
         camera = video_data.camera
 
-    tracker = DeepTracker(camera,
-                          data["model_file"],
-                          OBJECT_WIDTH,
-                          MODEL_3D_PATH,
-                          MODEL_3D_AO_PATH,
-                          SHADER_PATH)
-    tracker.load(MODEL_PATH)
+    tracker = DeepTracker(camera, data["model_file"], OBJECT_WIDTH)
+    tracker.load(MODEL_PATH, MODEL_3D_PATH, MODEL_3D_AO_PATH, SHADER_PATH)
     tracker.print()
     # Frames from the generator are in camera coordinate
     previous_frame, previous_pose = next(frame_generator)
@@ -122,8 +130,7 @@ if __name__ == '__main__':
             print("Estimation processing time : {}".format(time.time() - start_time))
             if not USE_SENSOR:
                 log_pose_difference(predicted_pose.inverse(), ground_truth_pose.inverse(), data_logger)
-            previous_pose = predicted_pose
-        screen = tracker.get_debug_screen(current_rgb)
+        draw_debug(screen, previous_pose, ground_truth_pose, tracker)
         previous_rgb = current_rgb
         if UNITY_DEMO:
             if meta.camera_parameters is None:

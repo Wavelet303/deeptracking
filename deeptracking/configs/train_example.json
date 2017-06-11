@@ -4,8 +4,10 @@
       "depth_noise": "2",
       "occluder_path": "path/to/occluder/dataset",
       "background_path": "path/to/background/dataset",
-      "blur_noise": "7",
-      "hue_noise": "0.05"
+      "blur_noise": "9",
+      "h_noise": "0.05",
+      "s_noise": "0.2",
+      "v_noise": "0.2"
     },
 
   "training_param":{

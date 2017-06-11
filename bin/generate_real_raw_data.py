@@ -1,7 +1,7 @@
 from deeptracking.detector.detector_aruco import ArucoDetector
 from deeptracking.utils.argumentparser import ArgumentParser
 from deeptracking.data.sensors.kinect2 import Kinect2
-from deeptracking.data.dataset_utils import rect_from_pose, image_blend
+from deeptracking.data.dataset_utils import compute_2Dboundingbox, image_blend
 from deeptracking.utils.icp import icp
 from deeptracking.utils.plyparser import PlyParser
 from deeptracking.utils.transform import Transform
@@ -40,7 +40,7 @@ def lerp(value, maximum, start_point, end_point):
 
 
 def show_occlusion(detection, rgb, depth, camera, bb_width):
-    pixels = rect_from_pose(detection, camera, bb_width)
+    pixels = compute_2Dboundingbox(detection, camera, bb_width)
     depth_crop = depth[pixels[0, 0]:pixels[1, 0], pixels[0, 1]:pixels[2, 1]].astype(np.float)
     mask = np.bitwise_and(depth_crop < 880, depth_crop != 0)
     mask = cv2.erode(mask.astype(np.uint8), np.ones((3, 3)))

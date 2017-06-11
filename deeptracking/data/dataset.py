@@ -84,12 +84,16 @@ class Dataset(ParallelMinibatch):
             frame = self.frame_class(rgb, depth, "{}n0".format(id))
             self.data_pair[id] = [(frame, pose)]
 
-    def dump_images_on_disk(self):
+    def dump_images_on_disk(self, verbose=False):
         """
         Unload all images data from ram and save them to the dataset's path ( can be reloaded with load_from_disk())
         :return:
         """
+        if verbose:
+            print("Save {} viewpoints".format(len(self.data_pose)))
         for frame, pose in self.data_pose:
+            if verbose:
+                print("Save frame {}".format(frame.id))
             if int(frame.id) in self.data_pair:
                 for pair_frame, pair_pose in self.data_pair[int(frame.id)]:
                     pair_frame.dump(self.path)

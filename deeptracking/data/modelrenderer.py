@@ -17,17 +17,18 @@ import numpy as np
 
 
 class ModelRenderer():
-    def __init__(self, model_path, shader_path, camera, window):
+    def __init__(self, model_path, shader_path, camera, window, window_size):
         self.model_3d = PlyParser(model_path)
         self.camera = camera
         self.window = window
+        self.window_size = window_size
 
         self.texcoord_buffer = None
 
         self.setup_shaders(shader_path)
         self.setup_buffers(self.model_3d)
         self.setup_attributes()
-        self.setup_camera()
+        self.setup_camera(self.camera, 0, self.camera.width, self.camera.height, 0)
 
     def setup_shaders(self, shader_path):
         with open(os.path.join(shader_path, "vertex_light.txt"), 'r') as myfile:
@@ -133,26 +134,26 @@ class ModelRenderer():
         except FileNotFoundError:
             print("[WARNING] ViewpointRender: ambiant occlusion file not found ... continue with basic render")
 
-    def setup_camera(self):
+    def setup_camera(self, camera, left, right, bottom, top):
         self.near_plane = 0.1
         self.far_plane = 2
 
         # credit : http://ksimek.github.io/2013/06/03/calibrated_cameras_in_opengl/
-        proj = np.array([[self.camera.focal_x, 0, -self.camera.center_x, 0],
-                         [0, self.camera.focal_y, -self.camera.center_y, 0],
+        proj = np.array([[camera.focal_x, 0, -camera.center_x, 0],
+                         [0, camera.focal_y, -camera.center_y, 0],
                          [0, 0, self.near_plane + self.far_plane, self.near_plane * self.far_plane],
                          [0, 0, -1, 0]])
-        self.projection_matrix = ModelRenderer.perspectiveMatrix(0.0,
-                                                                 self.camera.width,
-                                                                 self.camera.height,
-                                                                 0.0,
-                                                                 self.near_plane,
-                                                                 self.far_plane).dot(proj).T
+        self.projection_matrix = ModelRenderer.orthographicMatrix(left,
+                                                                  right,
+                                                                  bottom,
+                                                                  top,
+                                                                  self.near_plane,
+                                                                  self.far_plane).dot(proj).T
 
         glUniformMatrix4fv(self.uniform_locations['proj'], 1, GL_FALSE, self.projection_matrix)
 
     @staticmethod
-    def perspectiveMatrix(left, right, bottom, top, near, far):
+    def orthographicMatrix(left, right, bottom, top, near, far):
         right = float(right)
         left = float(left)
         top = float(top)
@@ -200,11 +201,11 @@ class ModelRenderer():
         glDrawElements(GL_TRIANGLES, len(self.faces) * 3, GL_UNSIGNED_INT, ctypes.c_void_p(0))
 
         # -- retrieve data
-        depth_array = glReadPixels(0, 0, self.camera.width, self.camera.height, GL_DEPTH_COMPONENT, GL_FLOAT)
-        depth_array = depth_array.reshape((self.camera.height, self.camera.width))
+        depth_array = glReadPixels(0, 0, self.window_size[0], self.window_size[1], GL_DEPTH_COMPONENT, GL_FLOAT)
+        depth_array = depth_array.reshape(self.window_size[::-1])
         depth_array = self.gldepth_to_worlddepth(depth_array)
-        rgb_array = glReadPixels(0, 0, self.camera.width, self.camera.height, GL_RGB, GL_UNSIGNED_BYTE)
-        rgb_array = np.frombuffer(rgb_array, dtype=np.uint8).reshape((self.camera.height, self.camera.width, 3))
+        rgb_array = glReadPixels(0, 0, self.window_size[0], self.window_size[1], GL_RGB, GL_UNSIGNED_BYTE)
+        rgb_array = np.frombuffer(rgb_array, dtype=np.uint8).reshape((self.window_size[1], self.window_size[1], 3))
         return rgb_array, depth_array
 
 
