@@ -219,6 +219,7 @@ def show_frames_from_buffer(image_buffer, mean, std):
 
 
 def normalize_depth(depth, pose):
+    depth = depth.astype(np.float32)
     zero_mask = depth == 0
     depth += pose.matrix[2, 3] * 1000
     depth[zero_mask] = 5000
