@@ -7,7 +7,7 @@ import os
 matplotlib.style.use('ggplot')
 
 if __name__ == '__main__':
-    path = "/home/mathieu/Dataset/DeepTrack/model/skull_eval_test"
+    path = "/home/mathieu/Dataset/DeepTrack/model/mixed_gardengnome/scores"
     files = [f for f in os.listdir(path) if f[-3:] == "csv"]
 
     figure_path = os.path.join(path, "figs")
@@ -48,11 +48,14 @@ if __name__ == '__main__':
         # Diff mean Translation/Rotation
         plt.figure(1)
         fig, axes = plt.subplots(nrows=2, ncols=1)
-        t_mean = df[['Tx', 'Ty', 'Tz']].mean(axis=1).as_matrix()
+        #t_mean = df[['Tx', 'Ty', 'Tz']].mean(axis=1).as_matrix()
+        t_mean = np.sqrt(df[['Tx']].as_matrix() ** 2 + df[['Ty']].as_matrix() ** 2 + df[['Tz']].as_matrix() ** 2)
+        print(t_mean)
+        #t_mean
         r_mean = df[['Rx', 'Ry', 'Rz']].mean(axis=1).as_matrix()
         axes[0].plot(np.arange(N), t_mean)
         axes[1].plot(np.arange(N), r_mean)
-        axes[0].set_ylim(0, 0.02)
+        axes[0].set_ylim(0, 0.08)
         axes[1].set_ylim(0, 20)
         fig.savefig(os.path.join(figure_path, "Mean_Diff_{}.png".format(name)))
 

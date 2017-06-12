@@ -22,8 +22,8 @@ UNITY_DEMO = False
 
 
 def log_pose_difference(prediction, ground_truth, logger):
-    prediction_params = prediction.to_parameters(isDegree=True)
-    ground_truth_params = ground_truth.to_parameters(isDegree=True)
+    prediction_params = prediction.inverse().to_parameters(isDegree=True)
+    ground_truth_params = ground_truth.inverse().to_parameters(isDegree=True)
     difference = np.zeros(6)
     for j in range(3):
         difference[j] = abs(prediction_params[j] - ground_truth_params[j])
@@ -77,6 +77,7 @@ if __name__ == '__main__':
     model_folder = os.sep.join(model_split_path[:-1])
     MODELS_3D = data["models"]
     SHADER_PATH = data["shader_path"]
+    CLOSED_LOOP_ITERATION = int(data["closed_loop_iteration"])
 
     OBJECT_WIDTH = int(MODELS_3D[0]["object_width"])
     MODEL_3D_PATH = MODELS_3D[0]["model_path"]
@@ -120,11 +121,10 @@ if __name__ == '__main__':
 
         if RESET_FREQUENCY != 0 and i % RESET_FREQUENCY == 0:
             previous_pose = ground_truth_pose
-            tracker.compute_render(previous_pose)
         else:
             # process pose estimation of current frame given last pose
             start_time = time.time()
-            for i in range(1):
+            for i in range(CLOSED_LOOP_ITERATION):
                 predicted_pose = tracker.estimate_current_pose(previous_pose, current_rgb, current_depth, debug=args.verbose)
                 previous_pose = predicted_pose
             print("Estimation processing time : {}".format(time.time() - start_time))

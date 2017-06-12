@@ -184,6 +184,8 @@ def validation_loop(model, dataset):
         loss_sum = 0
         loss_qty = 0
         minibatchs = dataset.get_minibatch()
+        total = 0
+        max = 20000
         for image_buffer, prior_buffer, label_buffer in minibatchs:
             if args.verbose:
                 print("Valid")
@@ -194,6 +196,9 @@ def validation_loop(model, dataset):
             losses = model.loss_function(prediction, label_buffer)
             loss_sum += losses["label"]
             loss_qty += 1
+            total += len(label_buffer)
+            if total > max:
+                break
     return loss_sum / loss_qty
 
 if __name__ == '__main__':

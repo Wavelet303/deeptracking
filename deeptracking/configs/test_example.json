@@ -13,6 +13,7 @@
   "model_path": "path/to/model",
   "video_path": "path/to/video/input",
   "reset_frequency": "0",
+  "closed_loop_iteration": "3",
 
   "use_sensor": "False",
   "COMMENT": "Sensor only",
