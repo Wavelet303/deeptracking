@@ -2,7 +2,7 @@ from deeptracking.utils.argumentparser import ArgumentParser
 from deeptracking.utils.camera import Camera
 from deeptracking.utils.transform import Transform
 from deeptracking.data.dataset import Dataset
-from deeptracking.data.dataset_utils import combine_view_transform, show_frames
+from deeptracking.data.dataset_utils import combine_view_transform, show_frames, compute_2Dboundingbox
 from deeptracking.data.modelrenderer import ModelRenderer, InitOpenGL
 from deeptracking.data.dataset_utils import normalize_scale
 from deeptracking.utils.uniform_sphere_sampler import UniformSphereSampler
@@ -54,7 +54,8 @@ if __name__ == '__main__':
     camera = Camera.load_from_json(data["camera_path"])
     dataset = Dataset(OUTPUT_PATH, frame_class=data["save_type"])
     dataset.camera = camera
-    window = InitOpenGL(camera.width, camera.height)
+    window_size = (camera.width, camera.height)
+    window = InitOpenGL(*window_size)
     sphere_sampler = UniformSphereSampler(SPHERE_MIN_RADIUS, SPHERE_MAX_RADIUS)
     preload_count = 0
     if PRELOAD:
@@ -63,7 +64,7 @@ if __name__ == '__main__':
             print("This Dataset already contains {} samples".format(preload_count))
     # Iterate over all models from config files
     for model in MODELS:
-        vpRender = ModelRenderer(model["model_path"], SHADER_PATH, dataset.camera, window)
+        vpRender = ModelRenderer(model["model_path"], SHADER_PATH, dataset.camera, window, window_size)
         vpRender.load_ambiant_occlusion_map(model["ambiant_occlusion_model"])
         OBJECT_WIDTH = int(model["object_width"])
         for i in range(SAMPLE_QUANTITY - preload_count):
@@ -74,8 +75,9 @@ if __name__ == '__main__':
 
             rgbA, depthA = vpRender.render(random_pose.transpose())
             rgbB, depthB = vpRender.render(pair.transpose(), sphere_sampler.random_direction())
-            rgbA, depthA = normalize_scale(rgbA, depthA, random_pose.inverse(), dataset.camera, IMAGE_SIZE, OBJECT_WIDTH)
-            rgbB, depthB = normalize_scale(rgbB, depthB, random_pose.inverse(), dataset.camera, IMAGE_SIZE, OBJECT_WIDTH)
+            bb = compute_2Dboundingbox(random_pose, dataset.camera, OBJECT_WIDTH, scale=(1000, -1000, -1000))
+            rgbA, depthA = normalize_scale(rgbA, depthA, bb, dataset.camera, IMAGE_SIZE)
+            rgbB, depthB = normalize_scale(rgbB, depthB, bb, dataset.camera, IMAGE_SIZE)
 
             index = dataset.add_pose(rgbA, depthA, random_pose)
             dataset.add_pair(rgbB, depthB, random_transform, index)

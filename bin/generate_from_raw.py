@@ -1,7 +1,7 @@
 from deeptracking.utils.argumentparser import ArgumentParser
 from deeptracking.utils.transform import Transform
 from deeptracking.data.dataset import Dataset
-from deeptracking.data.dataset_utils import combine_view_transform, center_pixel, show_frames
+from deeptracking.data.dataset_utils import combine_view_transform, center_pixel, show_frames, compute_2Dboundingbox
 from deeptracking.data.modelrenderer import ModelRenderer, InitOpenGL
 from deeptracking.data.dataset_utils import normalize_scale
 from deeptracking.utils.camera import Camera
@@ -142,8 +142,9 @@ if __name__ == '__main__':
             previous_pose = combine_view_transform(previous_pose, inverted_random_transform)
 
             rgbA, depthA = vpRender.render(previous_pose.transpose())
-            rgbA, depthA = normalize_scale(rgbA, depthA, previous_pose.inverse(), real_dataset.camera, IMAGE_SIZE, OBJECT_WIDTH)
-            rgbB, depthB = normalize_scale(rotated_rgb, rotated_depth, previous_pose.inverse(), real_dataset.camera, IMAGE_SIZE, OBJECT_WIDTH)
+            bb = compute_2Dboundingbox(previous_pose, real_dataset.camera, OBJECT_WIDTH, scale=(1000, -1000, -1000))
+            rgbA, depthA = normalize_scale(rgbA, depthA, bb, real_dataset.camera, IMAGE_SIZE)
+            rgbB, depthB = normalize_scale(rotated_rgb, rotated_depth, bb, real_dataset.camera, IMAGE_SIZE)
 
             index = output_dataset.add_pose(rgbA, depthA, previous_pose)
             output_dataset.add_pair(rgbB, depthB, random_transform, index)

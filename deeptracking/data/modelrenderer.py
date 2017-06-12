@@ -205,7 +205,7 @@ class ModelRenderer():
         depth_array = depth_array.reshape(self.window_size[::-1])
         depth_array = self.gldepth_to_worlddepth(depth_array)
         rgb_array = glReadPixels(0, 0, self.window_size[0], self.window_size[1], GL_RGB, GL_UNSIGNED_BYTE)
-        rgb_array = np.frombuffer(rgb_array, dtype=np.uint8).reshape((self.window_size[1], self.window_size[1], 3))
+        rgb_array = np.frombuffer(rgb_array, dtype=np.uint8).reshape((self.window_size[1], self.window_size[0], 3))
         return rgb_array, depth_array
 
 
