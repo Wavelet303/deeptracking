@@ -123,7 +123,7 @@ class DataAugmentation:
                 kernel = self.gkern(kernel_size)
                 ret_depth[:, :] = scipy.signal.convolve2d(ret_depth[:, :], kernel, mode='same')
 
-        return ret_rgb.astype(np.uint8), ret_depth
+        return ret_rgb, ret_depth
 
     @staticmethod
     def add_noise(img, gaussian_std):

@@ -5,7 +5,7 @@ from deeptracking.data.dataaugmentation import DataAugmentation
 
 if __name__ == '__main__':
 
-    object_path = "/home/mathieu/Dataset/DeepTrack/skull/test"
+    object_path = "/media/ssd/profactor/dustbin/valid"
     occluder_path = "/home/mathieu/Dataset/DeepTrack/mixed/test"
     background_path = "/home/mathieu/Dataset/RGBD/SUN3D"
 
@@ -15,7 +15,7 @@ if __name__ == '__main__':
     data_augmentation = DataAugmentation()
     data_augmentation.set_rgb_noise(2)
     data_augmentation.set_depth_noise(2)
-    data_augmentation.set_hsv_noise(0.07, 0.2, 0.2)
+    data_augmentation.set_hsv_noise(0.07, 0, 0.2)
     data_augmentation.set_occluder(occluder_path)
     data_augmentation.set_background(background_path)
     data_augmentation.set_blur(9)
