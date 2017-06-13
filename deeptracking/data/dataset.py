@@ -188,6 +188,12 @@ class Dataset(ParallelMinibatch):
 
         depthA = normalize_depth(depthA, initial_pose)
         depthB = normalize_depth(depthB, initial_pose)
+
+        rgbA = rgbA.astype(np.float32)
+        rgbB = rgbB.astype(np.float32)
+        depthA = depthA.astype(np.float32)
+        depthB = depthB.astype(np.float32)
+
         if self.mean is None or self.std is None:
             rgbA, rgbB = rgbA.T, rgbB.T
             depthA, depthB = depthA.T, depthB.T
