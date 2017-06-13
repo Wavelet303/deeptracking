@@ -9,8 +9,8 @@ require 'deeptracking.tracker.modelbase'
 
 local RGBDTracker = torch.class('RGBDTracker', 'ModelBase')
 
-function RGBDTracker:__init(backend, optimfunc)
-    ModelBase.__init(self, backend, optimfunc)
+function RGBDTracker:__init(backend, optimfunc, device)
+    ModelBase.__init(self, backend, optimfunc, device)
 
 end
 

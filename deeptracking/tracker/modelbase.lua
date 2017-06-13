@@ -15,14 +15,20 @@ require 'math'
 
 local ModelBase = torch.class('ModelBase')
 
-function ModelBase:__init(backend, optimfunc)
+function ModelBase:__init(backend, optimfunc, device)
     self.net = nil
     self.backend = backend
-    self.optimFunction = optim.adam
+    if device == nil then self.device = 1 else self.device = device end
+    if self.backend == "cuda" then
+        print(string.format("Using Device %d", self.device))
+        cutorch.setDevice(self.device)
+    end
     if optimfunc == "sgd" then
        self.optimFunction = optim.sgd
     elseif optimfunc == "adadelta" then
         self.optimFunction = optim.adadelta
+    else
+        self.optimFunction = optim.adam
     end
     self.config = {
         learningRate = 0.005,

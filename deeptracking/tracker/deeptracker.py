@@ -22,7 +22,7 @@ class DeepTracker(TrackerBase):
 
         # setup model
         model_class = PyTorchHelpers.load_lua_class(model_path, 'RGBDTracker')
-        self.tracker_model = model_class('cuda')
+        self.tracker_model = model_class('cuda', 'adam', 1)
 
         self.input_buffer = None
         self.prior_buffer = None

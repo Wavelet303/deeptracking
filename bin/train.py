@@ -112,6 +112,7 @@ def config_datasets(data):
 
 def config_model(data, dataset):
     dataset_metadata = dataset.metadata
+    gpu_device = int(data["gpu_device"])
     learning_rate = float(data["training_param"]["learning_rate"])
     learning_rate_decay = float(data["training_param"]["learning_rate_decay"])
     weight_decay = float(data["training_param"]["weight_decay"])
@@ -121,7 +122,7 @@ def config_model(data, dataset):
     convo2_size = int(data["training_param"]["convo2_size"])
     model_finetune = data["model_finetune"]
     model_class = PyTorchHelpers.load_lua_class(data["training_param"]["file"], 'RGBDTracker')
-    tracker_model = model_class('cuda')
+    tracker_model = model_class('cuda', 'adam', gpu_device)
 
     tracker_model.set_configs({
         "input_size": input_size,
