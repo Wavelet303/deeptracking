@@ -160,9 +160,14 @@ class Transform:
             raise ValueError("input array has to be of size 3 or in homogeneous coordinate, current size = " + str(shape))
         return self.matrix.dot(homogeneous).T[:, 0:3]
 
-    def combine(self, transform):
-        self.matrix = self.matrix.dot(transform.matrix)
-        return self
+    def combine(self, transform, copy=True):
+        ret_transform = self
+        if not copy:
+            self.matrix = self.matrix.dot(transform.matrix)
+        else:
+            new_matrix = self.matrix.dot(transform.matrix)
+            ret_transform = Transform.from_matrix(new_matrix)
+        return ret_transform
 
     def copy(self):
         ret = Transform()

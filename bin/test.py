@@ -78,6 +78,7 @@ if __name__ == '__main__':
     MODELS_3D = data["models"]
     SHADER_PATH = data["shader_path"]
     CLOSED_LOOP_ITERATION = int(data["closed_loop_iteration"])
+    SAVE_VIDEO = data["save_video"] == "True"
 
     OBJECT_WIDTH = int(MODELS_3D[0]["object_width"])
     MODEL_3D_PATH = MODELS_3D[0]["model_path"]
@@ -112,6 +113,11 @@ if __name__ == '__main__':
     previous_frame, previous_pose = next(frame_generator)
     previous_rgb, previous_depth = previous_frame.get_rgb_depth(frame_download_path)
 
+    log_folder = os.path.join(model_folder, "scores")
+    if SAVE_VIDEO:
+        fourcc = cv2.VideoWriter_fourcc(*'XVID')
+        out = cv2.VideoWriter(os.path.join(log_folder, "video.avi"), fourcc, 30.0, (camera.width, camera.height))
+
     data_logger = DataLogger()
     data_logger.create_dataframe("{}_eval".format(model_name), ("Tx", "Ty", "Tz", "Rx", "Ry", "Rz"))
     for i, (current_frame, ground_truth_pose) in enumerate(frame_generator):
@@ -124,10 +130,10 @@ if __name__ == '__main__':
         else:
             # process pose estimation of current frame given last pose
             start_time = time.time()
-            for i in range(CLOSED_LOOP_ITERATION):
+            for j in range(CLOSED_LOOP_ITERATION):
                 predicted_pose = tracker.estimate_current_pose(previous_pose, current_rgb, current_depth, debug=args.verbose)
                 previous_pose = predicted_pose
-            print("Estimation processing time : {}".format(time.time() - start_time))
+            print("[{}]Estimation processing time : {}".format(i, time.time() - start_time))
             if not USE_SENSOR:
                 log_pose_difference(predicted_pose.inverse(), ground_truth_pose.inverse(), data_logger)
         draw_debug(screen, previous_pose, ground_truth_pose, tracker)
@@ -145,13 +151,20 @@ if __name__ == '__main__':
             unity_server.send_data_to_clients(current_rgb[:, :, ::-1], meta)
 
         cv2.imshow("Debug", screen[:, :, ::-1])
+        if SAVE_VIDEO:
+            out.write(screen[:, :, ::-1])
         key = cv2.waitKey(30)
         key_chr = chr(key & 255)
         if key != -1:
             print("pressed key id : {}, char : [{}]".format(key, key_chr))
+        if key == 1048608:
+            print("Reset at frame : {}".format(i))
+            previous_pose = ground_truth_pose
         if key == ESCAPE_KEY:
             break
-    log_folder = os.path.join(model_folder, "scores")
     if not os.path.exists(log_folder):
         os.mkdir(log_folder)
     data_logger.save(log_folder)
+    if SAVE_VIDEO:
+        out.release()
+

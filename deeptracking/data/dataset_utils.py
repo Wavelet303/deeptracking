@@ -201,8 +201,8 @@ def show_frames(rgbA, depthA, rgbB, depthB):
     fig, axis = plt.subplots(2, 2)
     ax1, ax2 = axis[0, :]
     ax3, ax4 = axis[1, :]
-    ax1.imshow(rgbA)
-    ax2.imshow(rgbB)
+    ax1.imshow(rgbA.astype(np.uint8))
+    ax2.imshow(rgbB.astype(np.uint8))
     ax3.imshow(depthA)
     ax4.imshow(depthB)
     plt.show()
