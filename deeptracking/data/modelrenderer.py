@@ -16,7 +16,7 @@ from deeptracking.utils.plyparser import PlyParser
 import numpy as np
 
 
-class ModelRenderer():
+class ModelRenderer:
     def __init__(self, model_path, shader_path, camera, window, window_size):
         self.model_3d = PlyParser(model_path)
         self.camera = camera

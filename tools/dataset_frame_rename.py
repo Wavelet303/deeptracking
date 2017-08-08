@@ -4,7 +4,7 @@
 import os
 
 if __name__ == '__main__':
-    dataset_path = "/home/mathieu/Dataset/DeepTrack/sequence/skull/1"
+    dataset_path = "/media/mathieu/e912e715-2be7-4fa2-8295-5c3ef1369dd0/dataset/deeptracking/sequences/skull"
 
     files = [f for f in os.listdir(dataset_path) if os.path.splitext(f)[-1] == ".png" and 'd' not in os.path.splitext(f)[0]]
     print("Found {} files".format(len(files)))
