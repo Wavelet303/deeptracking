@@ -1,13 +1,15 @@
 from deeptracking.data.frame import Frame
 import cv2
 
+from deeptracking.utils.transform import Transform
+
 
 class ViewpointGenerator:
     def __init__(self, sensor, detector):
         self.sensor = sensor
         self.detector = detector
         self.count = 0
-        self.do_compute = True
+        self.do_compute = False
         self.sensor.start()
 
     def __del__(self):
@@ -23,6 +25,8 @@ class ViewpointGenerator:
         pose = None
         if self.do_compute:
             pose = self.detector.detect(rgb.copy())
+        if pose is None:
+            pose = Transform.from_parameters(0, 0, -1, 0, 0, 0)
         return frame, pose
 
     def __iter__(self):

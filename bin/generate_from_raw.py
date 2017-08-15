@@ -67,8 +67,8 @@ def rotate_image(img, angle, pivot):
     else:
         total_y = np.sum(imgP.any(axis=0)) * 2.4
         total_x = np.sum(imgP.any(axis=1)) * 2.4
-    cropy = (imgP.shape[0] - total_y)/2
-    cropx = (imgP.shape[1] - total_x)/2
+    cropy = int((imgP.shape[0] - total_y)/2)
+    cropx = int((imgP.shape[1] - total_x)/2)
     imgP[cropy:-cropy, cropx:-cropx] = ndimage.rotate(imgP[cropy:-cropy, cropx:-cropx], angle,
                                                       reshape=False, prefilter=False)
 

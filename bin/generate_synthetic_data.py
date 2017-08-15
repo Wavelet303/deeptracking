@@ -6,6 +6,7 @@ from deeptracking.data.dataset_utils import combine_view_transform, show_frames,
 from deeptracking.data.modelrenderer import ModelRenderer, InitOpenGL
 from deeptracking.data.dataset_utils import normalize_scale
 from deeptracking.utils.uniform_sphere_sampler import UniformSphereSampler
+from tqdm import tqdm
 import sys
 import json
 import os
@@ -67,7 +68,7 @@ if __name__ == '__main__':
         vpRender = ModelRenderer(model["model_path"], SHADER_PATH, dataset.camera, window, window_size)
         vpRender.load_ambiant_occlusion_map(model["ambiant_occlusion_model"])
         OBJECT_WIDTH = int(model["object_width"])
-        for i in range(SAMPLE_QUANTITY - preload_count):
+        for i in tqdm(range(SAMPLE_QUANTITY - preload_count)):
             random_pose = sphere_sampler.get_random()
             random_transform = Transform.random((-TRANSLATION_RANGE, TRANSLATION_RANGE),
                                                 (-ROTATION_RANGE, ROTATION_RANGE))
@@ -81,9 +82,6 @@ if __name__ == '__main__':
 
             index = dataset.add_pose(rgbA, depthA, random_pose)
             dataset.add_pair(rgbB, depthB, random_transform, index)
-
-            sys.stdout.write("Progress: %d%%   \r" % (int((i + preload_count) / SAMPLE_QUANTITY * 100)))
-            sys.stdout.flush()
 
             if i % 500 == 0:
                 dataset.dump_images_on_disk()

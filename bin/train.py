@@ -93,6 +93,7 @@ def config_datasets(data):
     data_augmentation.set_blur(blur_noise)
     data_augmentation.set_hsv_noise(h_noise, s_noise, v_noise)
 
+    message_logger.info("Setup Train : {}".format(train_path))
     train_dataset = Dataset(train_path, minibatch_size=minibatch_size)
     if not train_dataset.load():
         message_logger.error("Train dataset empty")
@@ -100,6 +101,7 @@ def config_datasets(data):
     train_dataset.set_data_augmentation(data_augmentation)
     train_dataset.compute_mean_std()
     message_logger.info("Computed mean : {}\nComputed Std : {}".format(train_dataset.mean, train_dataset.std))
+    message_logger.info("Setup Valid : {}".format(valid_path))
     valid_dataset = Dataset(valid_path, minibatch_size=minibatch_size)
     if not valid_dataset.load():
         message_logger.error("Valid dataset empty")

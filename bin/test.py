@@ -95,6 +95,8 @@ if __name__ == '__main__':
         detector = ArucoDetector(sensor.camera, data["detector_layout_path"])
         frame_generator = ViewpointGenerator(sensor, detector)
         camera = sensor.camera
+        detection_mode = True
+
     else:
         video_data = Dataset(VIDEO_PATH)
         if not video_data.load():
@@ -105,6 +107,7 @@ if __name__ == '__main__':
         gen = lambda alist: [(yield i) for i in alist]
         frame_generator = gen(video_data.data_pose)
         camera = video_data.camera
+        detection_mode = False
 
     tracker = DeepTracker(camera, data["model_file"], OBJECT_WIDTH)
     tracker.load(MODEL_PATH, MODEL_3D_PATH, MODEL_3D_AO_PATH, SHADER_PATH)
@@ -123,16 +126,21 @@ if __name__ == '__main__':
     for i, (current_frame, ground_truth_pose) in enumerate(frame_generator):
         # get actual frame
         current_rgb, current_depth = current_frame.get_rgb_depth(frame_download_path)
-        screen = current_rgb
+        current_rgb = cv2.resize(current_rgb, (camera.width, camera.height))
+        current_depth = cv2.resize(current_depth, (camera.width, camera.height))
 
+        screen = current_rgb.copy()
         if RESET_FREQUENCY != 0 and i % RESET_FREQUENCY == 0:
             previous_pose = ground_truth_pose
         else:
             # process pose estimation of current frame given last pose
             start_time = time.time()
-            for j in range(CLOSED_LOOP_ITERATION):
-                predicted_pose = tracker.estimate_current_pose(previous_pose, current_rgb, current_depth, debug=args.verbose)
-                previous_pose = predicted_pose
+            if detection_mode:
+                previous_pose = ground_truth_pose
+            else:
+                for j in range(CLOSED_LOOP_ITERATION):
+                    predicted_pose = tracker.estimate_current_pose(previous_pose, current_rgb, current_depth, debug=args.verbose)
+                    previous_pose = predicted_pose
             print("[{}]Estimation processing time : {}".format(i, time.time() - start_time))
             if not USE_SENSOR:
                 log_pose_difference(predicted_pose.inverse(), ground_truth_pose.inverse(), data_logger)
@@ -157,9 +165,10 @@ if __name__ == '__main__':
         key_chr = chr(key & 255)
         if key != -1:
             print("pressed key id : {}, char : [{}]".format(key, key_chr))
-        if key == 1048608:
+        if key == 1048608: #space
             print("Reset at frame : {}".format(i))
             previous_pose = ground_truth_pose
+            detection_mode = not detection_mode
         if key == ESCAPE_KEY:
             break
     if not os.path.exists(log_folder):
