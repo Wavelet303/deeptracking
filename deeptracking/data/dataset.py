@@ -132,7 +132,7 @@ class Dataset(ParallelMinibatch):
         self.metadata = data["metaData"]
         self.set_save_type(self.metadata["save_type"])
         count = 0
-        # todo this is not clean!
+        # todo this is not clean!i
         while True:
             try:
                 id = str(count)
@@ -146,6 +146,7 @@ class Dataset(ParallelMinibatch):
                 count += 1
 
             except KeyError:
+                print("Keyerror {} at {}".format(id, count))
                 break
         return True
 
@@ -224,9 +225,12 @@ class Dataset(ParallelMinibatch):
         return [permutations[x:x + self.minibatch_size] for x in range(0, len(permutations), self.minibatch_size)]
 
     def load_minibatch(self, task):
-        image_buffer = np.ndarray((len(task), 8, int(self.metadata["image_size"]), int(self.metadata["image_size"])), dtype=np.float32)
-        prior_buffer = np.ndarray((len(task), 7), dtype=np.float32)
-        label_buffer = np.ndarray((len(task), 6), dtype=np.float32)
-        for buffer_index, permutation in enumerate(task):
-            self.get_sample(permutation, image_buffer, prior_buffer, label_buffer, buffer_index)
+        try:
+            image_buffer = np.ndarray((len(task), 8, int(self.metadata["image_size"]), int(self.metadata["image_size"])), dtype=np.float32)
+            prior_buffer = np.ndarray((len(task), 7), dtype=np.float32)
+            label_buffer = np.ndarray((len(task), 6), dtype=np.float32)
+            for buffer_index, permutation in enumerate(task):
+                self.get_sample(permutation, image_buffer, prior_buffer, label_buffer, buffer_index)
+        except Exception as e:
+            print("Thread error : {}".format(e))
         return image_buffer, prior_buffer, label_buffer

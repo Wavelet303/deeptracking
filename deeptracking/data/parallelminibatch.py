@@ -33,7 +33,7 @@ class ParallelMinibatch:
     def init_processes(self):
         if self.processes:
             raise Exception("init_processes is called but there are still running process!")
-        self.tasks = JoinableQueue()
+        self.tasks = Queue()
         self.results = Queue(self.max_size)
 
         self.minibatches_indexes = self.compute_minibatches_permutations_()
@@ -51,7 +51,8 @@ class ParallelMinibatch:
         for i in range(self.N_Process):
             self.tasks.put(None)
         # todo implement a way to remove current task so we do not have to wait for all task to be completed
-        self.tasks.join()
+        for proc in self.processes:
+            proc.join()
         self.tasks = None
         self.results = None
         self.processes = []
@@ -60,11 +61,9 @@ class ParallelMinibatch:
         while True:
             task = tasks.get(block=True, timeout=None)
             if task is None:
-                tasks.task_done()
                 break
             batch = self.load_minibatch(task)
             results.put(batch)
-            tasks.task_done()
 
     def get_minibatch(self):
         """
