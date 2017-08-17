@@ -20,6 +20,8 @@ class ViewpointGenerator:
 
     def __next__(self):
         rgb, depth = self.sensor.get_frame()
+        rgb = cv2.resize(rgb, (self.sensor.camera.width, self.sensor.camera.height))
+        depth = cv2.resize(depth, (self.sensor.camera.width, self.sensor.camera.height))
         frame = Frame(rgb, depth, self.count)
         self.count += 1
         pose = None

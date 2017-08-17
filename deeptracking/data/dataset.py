@@ -11,7 +11,7 @@ from deeptracking.data.frame import Frame, FrameNumpy
 
 
 class Dataset(ParallelMinibatch):
-    def __init__(self, folder_path, frame_class="png", minibatch_size=64, max_parallel_buffer_size=0):
+    def __init__(self, folder_path, frame_class="png", minibatch_size=64, max_parallel_buffer_size=0, max_samples=0):
         ParallelMinibatch.__init__(self, max_parallel_buffer_size)
         self.path = folder_path
         self.data_pose = []
@@ -23,7 +23,8 @@ class Dataset(ParallelMinibatch):
         self.mean = None
         self.std = None
         self.data_augmentation = None
-        self.minibatch_size = minibatch_size
+        self.minibatch_size = minibatch_size,
+        self.max_size = max_samples
 
     def set_save_type(self, frame_class):
         if frame_class == "numpy":
@@ -221,7 +222,8 @@ class Dataset(ParallelMinibatch):
         PARALLEL MINIBATCH METHODS
     """
     def compute_minibatches_permutations_(self):
-        permutations = np.random.permutation(np.arange(0, self.size()))
+        size = min(self.size(), self.max_size)
+        permutations = np.random.permutation(np.arange(0, size))
         return [permutations[x:x + self.minibatch_size] for x in range(0, len(permutations), self.minibatch_size)]
 
     def load_minibatch(self, task):

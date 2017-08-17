@@ -102,7 +102,7 @@ def config_datasets(data):
     train_dataset.compute_mean_std()
     message_logger.info("Computed mean : {}\nComputed Std : {}".format(train_dataset.mean, train_dataset.std))
     message_logger.info("Setup Valid : {}".format(valid_path))
-    valid_dataset = Dataset(valid_path, minibatch_size=minibatch_size)
+    valid_dataset = Dataset(valid_path, minibatch_size=minibatch_size, max_samples=20000)
     if not valid_dataset.load():
         message_logger.error("Valid dataset empty")
         sys.exit(-1)
@@ -187,8 +187,6 @@ def validation_loop(model, dataset):
         loss_sum = 0
         loss_qty = 0
         minibatchs = dataset.get_minibatch()
-        total = 0
-        max = 20000
         for image_buffer, prior_buffer, label_buffer in minibatchs:
             if args.verbose:
                 print("Valid")
@@ -199,9 +197,6 @@ def validation_loop(model, dataset):
             losses = model.loss_function(prediction, label_buffer)
             loss_sum += losses["label"]
             loss_qty += 1
-            total += len(label_buffer)
-            if total > max:
-                break
     return loss_sum / loss_qty
 
 if __name__ == '__main__':

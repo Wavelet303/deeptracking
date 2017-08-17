@@ -1,15 +1,15 @@
 from deeptracking.data.sensors.sensorbase import SensorBase
 from deeptracking.utils.camera import Camera
 import pyfreenect2
-import cv2
+
 
 class Kinect2(SensorBase):
     def __init__(self, camera_path):
         self.serial_number = pyfreenect2.getDefaultDeviceSerialNumber()
         self.device = pyfreenect2.Freenect2Device(self.serial_number)
         self.frame_listener = pyfreenect2.SyncMultiFrameListener(pyfreenect2.Frame.COLOR,
-                                                           pyfreenect2.Frame.IR,
-                                                           pyfreenect2.Frame.DEPTH)
+                                                                 pyfreenect2.Frame.IR,
+                                                                 pyfreenect2.Frame.DEPTH)
 
         self.device.setColorFrameListener(self.frame_listener)
         self.device.setIrAndDepthFrameListener(self.frame_listener)
@@ -37,7 +37,8 @@ class Kinect2(SensorBase):
         frames = self.frame_listener.waitForNewFrame()
         rgbFrame = frames.getFrame(pyfreenect2.Frame.COLOR)
         depthFrame = frames.getFrame(pyfreenect2.Frame.DEPTH)
-        (undistorted, color_registered, depth_registered) = self.registration.apply(rgbFrame=rgbFrame, depthFrame=depthFrame)
+        (undistorted, color_registered, depth_registered) = self.registration.apply(rgbFrame=rgbFrame,
+                                                                                    depthFrame=depthFrame)
         depth_frame = depth_registered.getDepthData()
         rgb_frame = rgbFrame.getRGBData()
         self.frame_listener.release()

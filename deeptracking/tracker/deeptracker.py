@@ -2,7 +2,7 @@ from deeptracking.tracker.trackerbase import TrackerBase
 from deeptracking.utils.transform import Transform
 from deeptracking.data.dataset_utils import combine_view_transform, normalize_depth, show_frames, compute_2Dboundingbox
 from deeptracking.data.modelrenderer import ModelRenderer, InitOpenGL
-from deeptracking.data.dataset_utils import normalize_scale, normalize_channels, unnormalize_label, image_blend
+from deeptracking.data.dataset_utils import normalize_scale, normalize_channels, unnormalize_label
 import PyTorchHelpers
 import numpy as np
 import cv2
@@ -69,9 +69,11 @@ class DeepTracker(TrackerBase):
         bb = compute_2Dboundingbox(previous_pose, self.camera, self.object_width, scale=(1000, 1000, -1000))
         rgbA, depthA = self.compute_render(previous_pose, bb)
         bb = compute_2Dboundingbox(previous_pose, self.camera, self.object_width, scale=(1000, -1000, -1000))
+        debug_info = (rgbA, bb)
         rgbB, depthB = normalize_scale(current_rgb, current_depth, bb, self.camera, self.image_size)
 
-        cv2.imshow("testset", np.hstack((rgbA, rgbB)))
+
+        #cv2.imshow("testset", np.hstack((rgbA, rgbB)))
 
         rgbA = rgbA.astype(np.float)
         rgbB = rgbB.astype(np.float)
@@ -97,5 +99,5 @@ class DeepTracker(TrackerBase):
             print("Prediction : {}".format(prediction))
         prediction = Transform.from_parameters(*prediction[0], is_degree=True)
         current_pose = combine_view_transform(previous_pose, prediction)
-        return current_pose
+        return current_pose, debug_info
 
