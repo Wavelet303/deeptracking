@@ -81,8 +81,15 @@ def normalize_scale(color, depth, boundingbox, camera, output_size=(100, 100)):
 
     color = np.pad(color, ((lower_y, higher_y), (lower_x, higher_x), (0, 0)), mode="constant", constant_values=0)
     depth = np.pad(depth, ((lower_y, higher_y), (lower_x, higher_x)), mode="constant", constant_values=0)
-    color_crop = color[boundingbox[0, 0]:boundingbox[1, 0], boundingbox[0, 1]:boundingbox[2, 1], :]
-    depth_crop = depth[boundingbox[0, 0]:boundingbox[1, 0], boundingbox[0, 1]:boundingbox[2, 1]].astype(np.float)
+
+    left = np.min(boundingbox[:, 1])
+    right = np.max(boundingbox[:, 1])
+    top = np.min(boundingbox[:, 0])
+    bottom = np.max(boundingbox[:, 0])
+
+    color_crop = color[top:bottom, left:right, :]
+    depth_crop = depth[top:bottom, left:right].astype(np.float)
+
     mask_depth = imresize(depth_crop, output_size, interp='nearest', mode="F") != 0
     mask_rgb = imresize(color_crop, output_size, interp='nearest') != 0
     resized_color_crop = imresize(color_crop, output_size, interp='nearest')

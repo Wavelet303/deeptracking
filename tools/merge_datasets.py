@@ -4,9 +4,9 @@ import os
 
 
 if __name__ == '__main__':
-    datasets_path = ["/home/mathieu/Dataset/DeepTrack/dragon/valid_real",
-                     "/home/mathieu/Dataset/DeepTrack/dragon/valid_real"]
-    output_path = "/home/mathieu/Dataset/DeepTrack/dragon/valid_mixed"
+    datasets_path = ["/media/mathieu/e912e715-2be7-4fa2-8295-5c3ef1369dd0/dataset/deeptracking_train/dragon/real/valid",
+                     "/media/mathieu/e912e715-2be7-4fa2-8295-5c3ef1369dd0/dataset/deeptracking_train/dragon/synth/valid"]
+    output_path =    "/media/mathieu/e912e715-2be7-4fa2-8295-5c3ef1369dd0/dataset/deeptracking_train/dragon/real_synth/valid"
 
     if not os.path.exists(output_path):
         os.mkdir(output_path)
@@ -25,8 +25,11 @@ if __name__ == '__main__':
     for dataset_check in datasets:
         for other_dataset in datasets:
             if dataset_check.metadata != other_dataset.metadata:
-                raise RuntimeError("Dataset {} have different metadata than {}".format(dataset_check.path,
-                                                                                       other_dataset.path))
+                print(dataset_check.metadata)
+                raise RuntimeError("Dataset {} have different metadata than {}\n{}\n{}".format(dataset_check.path,
+                                                                                               other_dataset.path,
+                                                                                               dataset_check.metadata,
+                                                                                               other_dataset.metadata))
 
     metadata = datasets[0].metadata
     camera = datasets[0].camera
@@ -38,12 +41,11 @@ if __name__ == '__main__':
     for dataset in datasets:
         print("Process dataset {}".format(dataset.path))
         for i in tqdm(range(dataset.size())):
-            pair_id = 0
             rgbA, depthA, initial_pose = dataset.load_image(i)
-            rgbB, depthB, transformed_pose = dataset.load_pair(i, pair_id)
+            rgbB, depthB, transformed_pose = dataset.load_pair(i, 0)
 
-            output_dataset.add_pose(rgbA, depthA, initial_pose)
-            output_dataset.add_pair(rgbB, depthB, transformed_pose, pair_id)
+            index = output_dataset.add_pose(rgbA, depthA, initial_pose)
+            output_dataset.add_pair(rgbB, depthB, transformed_pose, index)
 
             if i % 500 == 0:
                 output_dataset.dump_images_on_disk()

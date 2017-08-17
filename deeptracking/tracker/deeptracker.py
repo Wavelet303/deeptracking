@@ -5,6 +5,7 @@ from deeptracking.data.modelrenderer import ModelRenderer, InitOpenGL
 from deeptracking.data.dataset_utils import normalize_scale, normalize_channels, unnormalize_label, image_blend
 import PyTorchHelpers
 import numpy as np
+import cv2
 
 
 class DeepTracker(TrackerBase):
@@ -56,7 +57,11 @@ class DeepTracker(TrackerBase):
         self.tracker_model.set_configs(configs)
 
     def compute_render(self, previous_pose, bb):
-        self.renderer.setup_camera(self.camera, bb[0, 1], bb[2, 1], bb[1, 0], bb[0, 0])
+        left = np.min(bb[:, 1])
+        right = np.max(bb[:, 1])
+        top = np.min(bb[:, 0])
+        bottom = np.max(bb[:, 0])
+        self.renderer.setup_camera(self.camera, left, right, bottom, top)
         render_rgb, render_depth = self.renderer.render(previous_pose.transpose())
         return render_rgb, render_depth
 
@@ -65,6 +70,8 @@ class DeepTracker(TrackerBase):
         rgbA, depthA = self.compute_render(previous_pose, bb)
         bb = compute_2Dboundingbox(previous_pose, self.camera, self.object_width, scale=(1000, -1000, -1000))
         rgbB, depthB = normalize_scale(current_rgb, current_depth, bb, self.camera, self.image_size)
+
+        cv2.imshow("testset", np.hstack((rgbA, rgbB)))
 
         rgbA = rgbA.astype(np.float)
         rgbB = rgbB.astype(np.float)
