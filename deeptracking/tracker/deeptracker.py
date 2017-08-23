@@ -4,6 +4,7 @@ from deeptracking.data.dataset_utils import combine_view_transform, normalize_de
 from deeptracking.data.modelrenderer import ModelRenderer, InitOpenGL
 from deeptracking.data.dataset_utils import normalize_scale, normalize_channels, unnormalize_label
 import PyTorchHelpers
+import time
 import numpy as np
 import cv2
 
@@ -65,13 +66,20 @@ class DeepTracker(TrackerBase):
         render_rgb, render_depth = self.renderer.render(previous_pose.transpose())
         return render_rgb, render_depth
 
-    def estimate_current_pose(self, previous_pose, current_rgb, current_depth, debug=False):
+    def estimate_current_pose(self, previous_pose, current_rgb, current_depth, debug=False, debug_time=False):
+        if debug_time:
+            start_time = time.time()
         bb = compute_2Dboundingbox(previous_pose, self.camera, self.object_width, scale=(1000, 1000, -1000))
+        bb2 = compute_2Dboundingbox(previous_pose, self.camera, self.object_width, scale=(1000, -1000, -1000))
+        if debug_time:
+            print("Compute BB : {}".format(time.time() - start_time))
+            start_time = time.time()
         rgbA, depthA = self.compute_render(previous_pose, bb)
-        bb = compute_2Dboundingbox(previous_pose, self.camera, self.object_width, scale=(1000, -1000, -1000))
-        debug_info = (rgbA, bb)
-        rgbB, depthB = normalize_scale(current_rgb, current_depth, bb, self.camera, self.image_size)
-
+        if debug_time:
+            print("Render : {}".format(time.time() - start_time))
+            start_time = time.time()
+        debug_info = (rgbA, bb2)
+        rgbB, depthB = normalize_scale(current_rgb, current_depth, bb2, self.camera, self.image_size)
 
         #cv2.imshow("testset", np.hstack((rgbA, rgbB)))
 
@@ -93,7 +101,12 @@ class DeepTracker(TrackerBase):
         self.input_buffer[0, 4:7, :, :] = rgbB
         self.input_buffer[0, 7, :, :] = depthB
         self.prior_buffer[0] = np.array(previous_pose.to_parameters(isQuaternion=True))
+        if debug_time:
+            print("Normalize : {}".format(time.time() - start_time))
+            start_time = time.time()
         prediction = self.tracker_model.test([self.input_buffer, self.prior_buffer]).asNumpyTensor()
+        if debug_time:
+            print("Network time : {}".format(time.time() - start_time))
         prediction = unnormalize_label(prediction, self.translation_range, self.rotation_range)
         if debug:
             print("Prediction : {}".format(prediction))

@@ -68,19 +68,24 @@ def normalize_scale(color, depth, boundingbox, camera, output_size=(100, 100)):
     lower_y = 0
     higher_x = 0
     higher_y = 0
+    need_padding = False
     if boundingbox[0, 0] < 0:
         lower_x = -boundingbox[0, 0]
         boundingbox[:, 0] += lower_x
+        need_padding = True
     if boundingbox[0, 1] < 0:
         lower_y = -boundingbox[0, 1]
         boundingbox[:, 1] += lower_y
+        need_padding = True
     if boundingbox[1, 0] > camera.width:
         higher_x = boundingbox[1, 0] - camera.width
+        need_padding = True
     if boundingbox[1, 1] > camera.height:
         higher_y = boundingbox[1, 1] - camera.height
-
-    color = np.pad(color, ((lower_y, higher_y), (lower_x, higher_x), (0, 0)), mode="constant", constant_values=0)
-    depth = np.pad(depth, ((lower_y, higher_y), (lower_x, higher_x)), mode="constant", constant_values=0)
+        need_padding = True
+    if need_padding:
+        color = np.pad(color, ((lower_y, higher_y), (lower_x, higher_x), (0, 0)), mode="constant", constant_values=0)
+        depth = np.pad(depth, ((lower_y, higher_y), (lower_x, higher_x)), mode="constant", constant_values=0)
 
     left = np.min(boundingbox[:, 1])
     right = np.max(boundingbox[:, 1])
@@ -90,11 +95,15 @@ def normalize_scale(color, depth, boundingbox, camera, output_size=(100, 100)):
     color_crop = color[top:bottom, left:right, :]
     depth_crop = depth[top:bottom, left:right].astype(np.float)
 
-    mask_depth = imresize(depth_crop, output_size, interp='nearest', mode="F") != 0
-    mask_rgb = imresize(color_crop, output_size, interp='nearest') != 0
-    resized_color_crop = imresize(color_crop, output_size, interp='nearest')
-    resized_depth_crop = imresize(depth_crop, output_size, interp='nearest', mode="F").astype(np.int16)
-    return resized_color_crop * mask_rgb, resized_depth_crop * mask_depth
+    resized_rgb = cv2.resize(color_crop, output_size, interpolation=cv2.INTER_NEAREST)
+    resized_depth = cv2.resize(depth_crop, output_size, interpolation=cv2.INTER_NEAREST)
+
+    mask_rgb = resized_rgb != 0
+    mask_depth = resized_depth != 0
+    resized_depth = resized_depth.astype(np.int16)
+    final_rgb = resized_rgb * mask_rgb
+    final_depth = resized_depth * mask_depth
+    return final_rgb, final_depth
 
 
 def cv_normalize_scale(color, depth, pose, camera, output_size=(100, 100), scale_size=230):

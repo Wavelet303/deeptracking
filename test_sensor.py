@@ -17,6 +17,7 @@ from deeptracking.utils.transform import Transform
 ESCAPE_KEY = 1048603
 SPACE_KEY = 1048608
 UNITY_DEMO = False
+DEBUG_TIME = False
 DEBUG = True
 
 
@@ -64,6 +65,8 @@ if __name__ == '__main__':
 
     # Populate important data from config file
     OUTPUT_PATH = data["output_path"]
+    if not os.path.exists(OUTPUT_PATH):
+        os.mkdir(OUTPUT_PATH)
     MODEL_PATH = data["model_path"]
     model_split_path = MODEL_PATH.split(os.sep)
     model_name = model_split_path[-1]
@@ -96,11 +99,12 @@ if __name__ == '__main__':
 
     if SAVE_VIDEO:
         fourcc = cv2.VideoWriter_fourcc(*'XVID')
-        out = cv2.VideoWriter(os.path.join(OUTPUT_PATH, "video.avi"), fourcc, 30.0, (camera.width, camera.height))
+        out = cv2.VideoWriter(os.path.join(OUTPUT_PATH, "video.avi"), fourcc, 12.0, (camera.width, camera.height))
     debug_info = None
     for i, (current_frame, ground_truth_pose) in enumerate(frame_generator):
         # get actual frame
-        start_time = time.time()
+        if DEBUG_TIME:
+            start_time = time.time()
 
         current_rgb, current_depth = current_frame.get_rgb_depth(None)
 
@@ -109,7 +113,9 @@ if __name__ == '__main__':
             previous_pose = ground_truth_pose
         else:
             for j in range(CLOSED_LOOP_ITERATION):
-                predicted_pose, debug_info = tracker.estimate_current_pose(previous_pose, current_rgb, current_depth, debug=args.verbose)
+                predicted_pose, debug_info = tracker.estimate_current_pose(previous_pose, current_rgb, current_depth,
+                                                                           debug=args.verbose,
+                                                                           debug_time=DEBUG_TIME)
                 previous_pose = predicted_pose
         draw_debug(screen, previous_pose, ground_truth_pose, tracker, debug_info)
         previous_rgb = current_rgb
@@ -139,7 +145,8 @@ if __name__ == '__main__':
                 frame_generator.compute_detection(detection_mode)
             if key == ESCAPE_KEY:
                 break
-        print("[{}]Estimation processing time : {}".format(i, time.time() - start_time))
+        if DEBUG_TIME:
+            print("[{}]Estimation processing time : {}".format(i, time.time() - start_time))
 
     if SAVE_VIDEO:
         out.release()
