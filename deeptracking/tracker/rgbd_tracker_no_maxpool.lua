@@ -22,6 +22,9 @@ function RGBDTracker:build_convo(input_channels, c1_filters, c2_filters, final_s
     first:add(nn.SpatialConvolution(4, c1_filters, c1_filter_size, c1_filter_size, 2, 2))
     first:add(nn.SpatialBatchNormalization(c1_filters))
     first:add(nn.ELU())
+    first:add(nn.SpatialConvolution(c1_filters, c1_filters, c1_filter_size, c1_filter_size, 2, 2))
+    first:add(nn.SpatialBatchNormalization(c1_filters))
+    first:add(nn.ELU())
 
     local input = nn:ParallelTable()
     input:add(first)
@@ -54,8 +57,7 @@ function RGBDTracker:build_model()
     local linear_size = self.config["linear_size"]
     local c1_filter_qty = self.config["convo1_size"]
     local c2_filter_qty = self.config["convo2_size"]
-    local input_size = self.config["input_size"]
-    local view = math.floor((((((((input_size-4)/2)-2)/2)-2)/2)-2)/2) -- todo should not be hardcoded..
+    local view = 4 -- todo should not be hardcoded..
     local view_size = view * view
 
     local convo = self:build_convo(8, c1_filter_qty, c2_filter_qty, view_size)
