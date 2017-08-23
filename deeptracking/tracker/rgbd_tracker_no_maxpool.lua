@@ -19,10 +19,10 @@ function RGBDTracker:build_convo(input_channels, c1_filters, c2_filters, final_s
     local c2_filter_size = 3
 
     local first = nn:Sequential()
-    first:add(nn.SpatialConvolution(4, c1_filters, c1_filter_size, c1_filter_size, 2, 2))
+    first:add(nn.SpatialConvolution(4, c1_filters, c2_filter_size, c2_filter_size, 2, 2))
     first:add(nn.SpatialBatchNormalization(c1_filters))
     first:add(nn.ELU())
-    first:add(nn.SpatialConvolution(c1_filters, c1_filters, c1_filter_size, c1_filter_size, 2, 2))
+    first:add(nn.SpatialConvolution(c1_filters, c1_filters, c2_filter_size, c2_filter_size, 2, 2))
     first:add(nn.SpatialBatchNormalization(c1_filters))
     first:add(nn.ELU())
 
