@@ -19,7 +19,7 @@ function RGBDTracker:build_convo(input_channels, c1_filters, c2_filters, final_s
     local c2_filter_size = 3
 
     local first = nn:Sequential()
-    first:add(nn.SpatialConvolution(4, c1_filters, c2_filter_size, c2_filter_size, 2, 2))
+    first:add(nn.SpatialConvolution(3, c1_filters, c2_filter_size, c2_filter_size, 2, 2))
     first:add(nn.SpatialBatchNormalization(c1_filters))
     first:add(nn.ELU())
     first:add(nn.FireModule(c1_filters, c1_filters/2, c1_filters/2, c1_filters/2, 'ELU'))
@@ -71,7 +71,7 @@ end
 function RGBDTracker:convert_inputs(inputs)
     self.inputTensor = self:setup_tensor(inputs[1], self.inputTensor)
     self.priorTensor = self:setup_tensor(inputs[2][{ {},{4,7} }], self.priorTensor)
-    local ret = {self.inputTensor[{{}, {1,4}, {}, {}}], self.inputTensor[{{}, {5,8}, {}, {}}] }
+    local ret = {self.inputTensor[{{}, {1,3}, {}, {}}], self.inputTensor[{{}, {5,7}, {}, {}}] }
     return ret
 end
 
