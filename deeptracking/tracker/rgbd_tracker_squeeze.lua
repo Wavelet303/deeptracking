@@ -22,6 +22,9 @@ function RGBDTracker:build_convo(input_channels, c1_filters, c2_filters, final_s
     first:add(nn.SpatialConvolution(4, c1_filters, c2_filter_size, c2_filter_size, 2, 2))
     first:add(nn.SpatialBatchNormalization(c1_filters))
     first:add(nn.ELU())
+    first:add(nn.FireModule(c1_filters, c1_filters/2, c1_filters/2, c1_filters/2))
+    first:add(nn.SpatialMaxPooling(2, 2, 2, 2))
+    first:add(nn.SpatialBatchNormalization(c1_filters))
 
     local input = nn:ParallelTable()
     input:add(first)
@@ -31,23 +34,17 @@ function RGBDTracker:build_convo(input_channels, c1_filters, c2_filters, final_s
     convo:add(input)
     convo:add(nn.JoinTable(2))
 
-    convo:add(nn.FireModule(c1_filters * 2, c1_filters, c1_filters, c1_filters))
+    convo:add(nn.FireModule(c1_filters*2, c1_filters, c1_filters, c1_filters))
     convo:add(nn.SpatialMaxPooling(2, 2, 2, 2))
     convo:add(nn.SpatialBatchNormalization(c2_filters))
-    convo:add(nn.ELU())
-    --convo:add(nn.SpatialDropout(0.2))
 
     convo:add(nn.FireModule(c1_filters * 2, c1_filters, c1_filters, c1_filters))
     convo:add(nn.SpatialMaxPooling(2, 2, 2, 2))
     convo:add(nn.SpatialBatchNormalization(c2_filters))
-    convo:add(nn.ELU())
-    --convo:add(nn.SpatialDropout(0.2))
 
     convo:add(nn.FireModule(c1_filters * 2, c1_filters, c1_filters, c1_filters))
     convo:add(nn.SpatialMaxPooling(2, 2, 2, 2))
     convo:add(nn.SpatialBatchNormalization(c2_filters))
-    convo:add(nn.ELU())
-    --convo:add(nn.SpatialDropout(0.2))
     convo:add(nn.View(-1, c2_filters * final_size))
 
     return convo

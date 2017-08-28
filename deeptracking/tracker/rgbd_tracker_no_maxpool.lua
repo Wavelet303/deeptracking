@@ -57,7 +57,7 @@ function RGBDTracker:build_model()
     local linear_size = self.config["linear_size"]
     local c1_filter_qty = self.config["convo1_size"]
     local c2_filter_qty = self.config["convo2_size"]
-    local view = 4 -- todo should not be hardcoded..
+    local view = 3 -- todo should not be hardcoded..
     local view_size = view * view
 
     local convo = self:build_convo(8, c1_filter_qty, c2_filter_qty, view_size)
