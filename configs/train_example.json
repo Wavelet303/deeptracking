@@ -7,7 +7,8 @@
       "blur_noise": "9",
       "h_noise": "0.05",
       "s_noise": "0.2",
-      "v_noise": "0.2"
+      "v_noise": "0.2",
+      "channel_hide" : "True"
     },
 
   "training_param":{

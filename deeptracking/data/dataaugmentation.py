@@ -21,6 +21,7 @@ class DataAugmentation:
         self.h_noise = None
         self.s_noise = None
         self.v_noise = None
+        self.channel_hide = None
 
     def set_background(self, path):
         self.background = RGBDDataset(path)
@@ -53,6 +54,9 @@ class DataAugmentation:
 
     def set_jitter(self, max_x, max_y):
         self.jitter = (max_x, max_y)
+
+    def set_channel_hide(self, proba):
+        self.channel_hide = proba
 
     def augment(self, rgb, depth, prior, real=False):
         ret_rgb = rgb
@@ -123,6 +127,12 @@ class DataAugmentation:
                 kernel = self.gkern(kernel_size)
                 ret_depth[:, :] = scipy.signal.convolve2d(ret_depth[:, :], kernel, mode='same')
 
+        if real and self.channel_hide is not None:
+            if random.uniform(0, 1) < self.channel_hide:
+                if random.randint(0, 1):
+                    ret_rgb[:, :, :] = 0
+                else:
+                    ret_depth[:, :] = 0
         return ret_rgb, ret_depth
 
     @staticmethod

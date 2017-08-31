@@ -82,6 +82,7 @@ def config_datasets(data):
     h_noise = float(data["data_augmentation"]["h_noise"])
     s_noise = float(data["data_augmentation"]["s_noise"])
     v_noise = float(data["data_augmentation"]["v_noise"])
+    channel_hide = data["data_augmentation"]["channel_hide"] == "True"
 
     data_augmentation = DataAugmentation()
     data_augmentation.set_rgb_noise(rgb_noise)
@@ -90,6 +91,8 @@ def config_datasets(data):
         data_augmentation.set_occluder(occluder_path)
     if background_path != "":
         data_augmentation.set_background(background_path)
+    if channel_hide:
+        data_augmentation.set_channel_hide(0.25)
     data_augmentation.set_blur(blur_noise)
     data_augmentation.set_hsv_noise(h_noise, s_noise, v_noise)
 

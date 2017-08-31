@@ -122,7 +122,7 @@ if __name__ == '__main__':
     dataset.camera = camera
     window = InitOpenGL(camera.width, camera.height)
     detector = ArucoDetector(camera, DETECTOR_PATH)
-    vpRender = ModelRenderer(MODELS[0]["model_path"], SHADER_PATH, camera, window)
+    vpRender = ModelRenderer(MODELS[0]["model_path"], SHADER_PATH, camera, window, (camera.width, camera.height))
     vpRender.load_ambiant_occlusion_map(MODELS[0]["ambiant_occlusion_model"])
 
     cv2.namedWindow('image')
@@ -135,8 +135,9 @@ if __name__ == '__main__':
     lock_offset = False
     if PRELOAD:
         dataset.load()
-        if dataset.size():
-            detection_offset = Transform.from_matrix(np.load(os.path.join(dataset.path, "offset.npy")))
+        offset_path = os.path.join(dataset.path, "offset.npy")
+        if os.path.exists(offset_path):
+            detection_offset = Transform.from_matrix(np.load(offset_path))
             lock_offset = True
 
     while True:
@@ -150,7 +151,6 @@ if __name__ == '__main__':
             # here we add a dummy pose, we will compute the pose as a post operation
             dataset.add_pose(bgr, depth, Transform())
         else:
-            screen = bgr.copy()
             detection = detector.detect(screen)
             # Draw a color rectangle around screen : red no detection, green strong detection
             color_ = lerp(detector.get_likelihood(), 1, np.array([255, 0, 0]), np.array([0, 255, 0]))
@@ -172,6 +172,7 @@ if __name__ == '__main__':
         font = cv2.FONT_HERSHEY_SIMPLEX
         cv2.putText(screen, "Fps : {:10.4f}".format(1./(time.time() - start_time)), (10, 50), font, 1, (255, 255, 255), 2, cv2.LINE_AA)
         cv2.imshow("image", screen[:, :, ::-1])
+        cv2.imshow("depth", (depth[:, :] / np.max(depth) * 255).astype(np.uint8))
         key = cv2.waitKey(1)
         key_chr = chr(key & 255)
         if key != -1:

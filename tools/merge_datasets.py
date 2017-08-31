@@ -4,9 +4,9 @@ import os
 
 
 if __name__ == '__main__':
-    datasets_path = ["/media/mathieu/e912e715-2be7-4fa2-8295-5c3ef1369dd0/dataset/deeptracking_train/dragon/real/valid",
-                     "/media/mathieu/e912e715-2be7-4fa2-8295-5c3ef1369dd0/dataset/deeptracking_train/dragon/synth/valid"]
-    output_path =    "/media/mathieu/e912e715-2be7-4fa2-8295-5c3ef1369dd0/dataset/deeptracking_train/dragon/real_synth/valid"
+    datasets_path = ["/media/mathieu/e912e715-2be7-4fa2-8295-5c3ef1369dd0/dataset/deeptracking_train/dragon/real_large/train",
+                     "/media/mathieu/e912e715-2be7-4fa2-8295-5c3ef1369dd0/dataset/deeptracking_train/dragon/synth_large/train"]
+    output_path =    "/media/mathieu/e912e715-2be7-4fa2-8295-5c3ef1369dd0/dataset/deeptracking_train/dragon/real_synth_large/train"
 
     if not os.path.exists(output_path):
         os.mkdir(output_path)
