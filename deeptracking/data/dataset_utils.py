@@ -63,37 +63,29 @@ def combine_view_transform(vp, view_transform):
 
 
 def normalize_scale(color, depth, boundingbox, camera, output_size=(100, 100)):
-    # pad zeros if the crop happens outside of original image
-    lower_x = 0
-    lower_y = 0
-    higher_x = 0
-    higher_y = 0
-    need_padding = False
-    if boundingbox[0, 0] < 0:
-        lower_x = -boundingbox[0, 0]
-        boundingbox[:, 0] += lower_x
-        need_padding = True
-    if boundingbox[0, 1] < 0:
-        lower_y = -boundingbox[0, 1]
-        boundingbox[:, 1] += lower_y
-        need_padding = True
-    if boundingbox[1, 0] > camera.width:
-        higher_x = boundingbox[1, 0] - camera.width
-        need_padding = True
-    if boundingbox[1, 1] > camera.height:
-        higher_y = boundingbox[1, 1] - camera.height
-        need_padding = True
-    if need_padding:
-        color = np.pad(color, ((lower_y, higher_y), (lower_x, higher_x), (0, 0)), mode="constant", constant_values=0)
-        depth = np.pad(depth, ((lower_y, higher_y), (lower_x, higher_x)), mode="constant", constant_values=0)
 
     left = np.min(boundingbox[:, 1])
     right = np.max(boundingbox[:, 1])
     top = np.min(boundingbox[:, 0])
     bottom = np.max(boundingbox[:, 0])
 
-    color_crop = color[top:bottom, left:right, :]
-    depth_crop = depth[top:bottom, left:right].astype(np.float)
+    # Compute offset if bounding box goes out of the frame (0 padding)
+    h, w, c = color.shape
+    crop_w = right - left
+    crop_h = bottom - top
+    color_crop = np.zeros((crop_h, crop_w, 3), dtype=color.dtype)
+    depth_crop = np.zeros((crop_h, crop_w), dtype=np.float)
+    top_offset = abs(min(top, 0))
+    bottom_offset = min(crop_h - (bottom - h), crop_h)
+    right_offset = min(crop_w - (right - w), crop_w)
+    left_offset = abs(min(left, 0))
+
+    if top < 0:
+        top = 0
+    if left < 0:
+        left = 0
+    color_crop[top_offset:bottom_offset, left_offset:right_offset, :] = color[top:bottom, left:right, :]
+    depth_crop[top_offset:bottom_offset, left_offset:right_offset] = depth[top:bottom, left:right]
 
     resized_rgb = cv2.resize(color_crop, output_size, interpolation=cv2.INTER_NEAREST)
     resized_depth = cv2.resize(depth_crop, output_size, interpolation=cv2.INTER_NEAREST)

@@ -21,12 +21,15 @@ DEBUG_TIME = False
 DEBUG = True
 
 
-def draw_debug(img, pose, gt_pose, tracker, debug_info):
+def draw_debug(img, pose, gt_pose, tracker, alpha, debug_info):
     if debug_info is not None:
         img_render, bb = debug_info
         img_render = cv2.resize(img_render, (bb[2, 1] - bb[0, 1], bb[1, 0] - bb[0, 0]))
-        img[bb[0, 0]:bb[1, 0], bb[0, 1]:bb[2, 1], :] = image_blend(img_render[:, :, ::-1], img[bb[0, 0]:bb[1, 0],
-                                                                                           bb[0, 1]:bb[2, 1], :])
+        crop = img[bb[0, 0]:bb[1, 0], bb[0, 1]:bb[2, 1], :]
+        h, w, c = crop.shape
+        blend = image_blend(img_render[:h, :w, ::-1], crop)
+        img[bb[0, 0]:bb[1, 0], bb[0, 1]:bb[2, 1], :] = cv2.addWeighted(img[bb[0, 0]:bb[1, 0], bb[0, 1]:bb[2, 1], :],
+                                                                       1 - alpha, blend, alpha, 1)
     else:
         axis = compute_axis(pose, tracker.camera, tracker.object_width, scale=(1000, -1000, -1000))
         axis_gt = compute_axis(gt_pose, tracker.camera, tracker.object_width, scale=(1000, -1000, -1000))
@@ -38,6 +41,11 @@ def draw_debug(img, pose, gt_pose, tracker, debug_info):
         cv2.line(img, tuple(axis[0, ::-1]), tuple(axis[1, ::-1]), (0, 0, 255), 3)
         cv2.line(img, tuple(axis[0, ::-1]), tuple(axis[2, ::-1]), (0, 255, 0), 3)
         cv2.line(img, tuple(axis[0, ::-1]), tuple(axis[3, ::-1]), (255, 0, 0), 3)
+
+alpha = 1
+def trackbar(x):
+    global alpha
+    alpha = x/100
 
 if __name__ == '__main__':
 
@@ -75,6 +83,7 @@ if __name__ == '__main__':
     SHADER_PATH = data["shader_path"]
     CLOSED_LOOP_ITERATION = int(data["closed_loop_iteration"])
     SAVE_VIDEO = data["save_video"] == "True"
+    show_rgb = True
 
     OBJECT_WIDTH = int(MODELS_3D[0]["object_width"])
     MODEL_3D_PATH = MODELS_3D[0]["model_path"]
@@ -97,6 +106,9 @@ if __name__ == '__main__':
     previous_frame, previous_pose = next(frame_generator)
     previous_rgb, previous_depth = previous_frame.get_rgb_depth(None)
 
+    cv2.namedWindow('image')
+    cv2.createTrackbar('transparency', 'image', 0, 100, trackbar)
+
     if SAVE_VIDEO:
         fourcc = cv2.VideoWriter_fourcc(*'XVID')
         out = cv2.VideoWriter(os.path.join(OUTPUT_PATH, "video.avi"), fourcc, 12.0, (camera.width, camera.height))
@@ -107,8 +119,12 @@ if __name__ == '__main__':
             start_time = time.time()
 
         current_rgb, current_depth = current_frame.get_rgb_depth(None)
+        if show_rgb:
+            screen = current_rgb.copy()
+        else:
+            screen = (current_depth / np.max(current_depth) * 255).astype(np.uint8)[:, :, np.newaxis]
+            screen = np.repeat(screen, 3, axis=2)
 
-        screen = current_rgb.copy()
         if detection_mode:
             previous_pose = ground_truth_pose
         else:
@@ -117,7 +133,8 @@ if __name__ == '__main__':
                                                                            debug=args.verbose,
                                                                            debug_time=DEBUG_TIME)
                 previous_pose = predicted_pose
-        draw_debug(screen, previous_pose, ground_truth_pose, tracker, debug_info)
+
+        draw_debug(screen, previous_pose, ground_truth_pose, tracker, alpha, debug_info)
         previous_rgb = current_rgb
         if UNITY_DEMO:
             if meta.camera_parameters is None:
@@ -126,18 +143,18 @@ if __name__ == '__main__':
             meta.object_pose = []
             if previous_pose:
                 params = previous_pose.to_parameters()
-                #params[3:] = output_rot_filter.compute_mean(params[3:])
-                #params[:3] = output_trans_filter.compute_mean(params[:3])
                 meta.add_object_pose(*params)
             unity_server.send_data_to_clients(current_rgb[:, :, ::-1], meta)
         if DEBUG:
-            cv2.imshow("Debug", screen[:, :, ::-1])
+            cv2.imshow("image", screen[:, 80:-150, ::-1])
             if SAVE_VIDEO:
                 out.write(screen[:, :, ::-1])
             key = cv2.waitKey(1)
             key_chr = chr(key & 255)
             if key != -1:
                 print("pressed key id : {}, char : [{}]".format(key, key_chr))
+            if key_chr == 's':
+                show_rgb = not show_rgb
             if key == SPACE_KEY:
                 print("Reset at frame : {}".format(i))
                 previous_pose = ground_truth_pose
