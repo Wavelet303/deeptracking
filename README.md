@@ -48,8 +48,6 @@ python train.py config_file.json
 - Hugh Perkins's [pytorch](https://github.com/hughperkins/pytorch)
 - scipy, skimage, numpy
 - tqdm
-- pyOpenGL
-- glfw
 - plyfile
 - numpngw
 - slackclient (could be removed)
@@ -57,3 +55,27 @@ python train.py config_file.json
 #### configuration
 see this [example file](https://github.com/lvsn/deeptracking/blob/develop/configs/train_example.json)
 
+## Test
+#### Sensor
+Will run the tracker with a sensor (kinect 2)
+```bash
+python test_sensor.py config_file.json
+```
+
+#### Sequence
+Will run the tracker on a sequence (folder) and save the error in a file
+```bash
+python test_sequence.py config_file.json
+```
+
+#### dependencies
+- cv2
+- Hugh Perkins's [pytorch](https://github.com/hughperkins/pytorch)
+- pyOpenGL
+- glfw
+- plyfile
+- numpngw
+- [pyfreenect2](https://github.com/MathGaron/py3freenect2) (for Kinect2 sensor)
+
+#### configuration
+see this [example file](https://github.com/lvsn/deeptracking/blob/develop/configs/test_example.json)

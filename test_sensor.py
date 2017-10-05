@@ -5,14 +5,13 @@ import time
 import numpy as np
 import os
 
-from deeptracking.data.dataset_utils import angle_distance, compute_axis, image_blend
+from deeptracking.data.dataset_utils import compute_axis, image_blend
 from deeptracking.data.sensors.kinect2 import Kinect2
 from deeptracking.data.sensors.viewpointgenerator import ViewpointGenerator
 from deeptracking.detector.detector_aruco import ArucoDetector
 from deeptracking.utils.argumentparser import ArgumentParser
 from deeptracking.tracker.deeptracker import DeepTracker
 from deeptracking.utils.filters import MeanFilter
-from deeptracking.utils.transform import Transform
 
 ESCAPE_KEY = 1048603
 SPACE_KEY = 1048608
