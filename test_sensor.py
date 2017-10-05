@@ -23,7 +23,7 @@ DEBUG = True
 
 def draw_debug(img, pose, gt_pose, tracker, alpha, debug_info):
     if debug_info is not None:
-        img_render, bb = debug_info
+        img_render, bb, _ = debug_info
         img_render = cv2.resize(img_render, (bb[2, 1] - bb[0, 1], bb[1, 0] - bb[0, 0]))
         crop = img[bb[0, 0]:bb[1, 0], bb[0, 1]:bb[2, 1], :]
         h, w, c = crop.shape
@@ -83,7 +83,8 @@ if __name__ == '__main__':
     SHADER_PATH = data["shader_path"]
     CLOSED_LOOP_ITERATION = int(data["closed_loop_iteration"])
     SAVE_VIDEO = data["save_video"] == "True"
-    show_rgb = True
+    SHOW_DEPTH = data["show_depth"] == "True"
+    SHOW_ZOOM = data["show_zoom"] == "True"
 
     OBJECT_WIDTH = int(MODELS_3D[0]["object_width"])
     MODEL_3D_PATH = MODELS_3D[0]["model_path"]
@@ -109,9 +110,7 @@ if __name__ == '__main__':
     cv2.namedWindow('image')
     cv2.createTrackbar('transparency', 'image', 0, 100, trackbar)
 
-    if SAVE_VIDEO:
-        fourcc = cv2.VideoWriter_fourcc(*'XVID')
-        out = cv2.VideoWriter(os.path.join(OUTPUT_PATH, "video.avi"), fourcc, 12.0, (camera.width, camera.height))
+    out = None
     debug_info = None
     for i, (current_frame, ground_truth_pose) in enumerate(frame_generator):
         # get actual frame
@@ -119,11 +118,10 @@ if __name__ == '__main__':
             start_time = time.time()
 
         current_rgb, current_depth = current_frame.get_rgb_depth(None)
-        if show_rgb:
-            screen = current_rgb.copy()
-        else:
-            screen = (current_depth / np.max(current_depth) * 255).astype(np.uint8)[:, :, np.newaxis]
-            screen = np.repeat(screen, 3, axis=2)
+        screen_rgb = current_rgb.copy()
+        if SHOW_DEPTH:
+            screen_depth = (current_depth / np.max(current_depth) * 255).astype(np.uint8)[:, :, np.newaxis]
+            screen_depth = np.repeat(screen_depth, 3, axis=2)
 
         if detection_mode:
             previous_pose = ground_truth_pose
@@ -134,7 +132,9 @@ if __name__ == '__main__':
                                                                            debug_time=DEBUG_TIME)
                 previous_pose = predicted_pose
 
-        draw_debug(screen, previous_pose, ground_truth_pose, tracker, alpha, debug_info)
+        draw_debug(screen_rgb, previous_pose, ground_truth_pose, tracker, alpha, debug_info)
+        if SHOW_DEPTH:
+            draw_debug(screen_depth, previous_pose, ground_truth_pose, tracker, alpha, debug_info)
         previous_rgb = current_rgb
         if UNITY_DEMO:
             if meta.camera_parameters is None:
@@ -146,15 +146,27 @@ if __name__ == '__main__':
                 meta.add_object_pose(*params)
             unity_server.send_data_to_clients(current_rgb[:, :, ::-1], meta)
         if DEBUG:
-            cv2.imshow("image", screen[:, 80:-150, ::-1])
+            min_x = 80
+            max_x = -150
+            screen = screen_rgb[:, min_x:max_x, :]
+            if SHOW_DEPTH:
+                screen = np.concatenate((screen_rgb[:, min_x:max_x, :], screen_depth[:, min_x:max_x, :]), axis=1)
+            if SHOW_ZOOM and debug_info is not None:
+                _, _, zoom = debug_info
+                zoom_h, zoom_w, zoom_c = zoom.shape
+                screen[:zoom_h + 6, :zoom_w + 6, :] = 255
+                screen[3:zoom_h + 3, 3:zoom_w + 3, :] = zoom
+            cv2.imshow("image", screen[:, :, ::-1])
             if SAVE_VIDEO:
+                if out is None:
+                    fourcc = cv2.VideoWriter_fourcc(*'XVID')
+                    out = cv2.VideoWriter(os.path.join(OUTPUT_PATH, "video.avi"), fourcc, 12.0,
+                                          (screen.shape[1], screen.shape[0]))
                 out.write(screen[:, :, ::-1])
             key = cv2.waitKey(1)
             key_chr = chr(key & 255)
             if key != -1:
                 print("pressed key id : {}, char : [{}]".format(key, key_chr))
-            if key_chr == 's':
-                show_rgb = not show_rgb
             if key == SPACE_KEY:
                 print("Reset at frame : {}".format(i))
                 previous_pose = ground_truth_pose

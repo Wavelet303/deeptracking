@@ -1,18 +1,17 @@
 {
   "data_augmentation":{
-      "rgb_noise": "2",
-      "depth_noise": "2",
-      "occluder_path": "path/to/occluder/dataset",
-      "background_path": "path/to/background/dataset",
-      "blur_noise": "9",
-      "h_noise": "0.05",
-      "s_noise": "0.2",
-      "v_noise": "0.2",
-      "channel_hide" : "True"
+      "rgb_noise": "4",       # std of rgb gaussian noise
+      "depth_noise": "20",    # std of depth gaussian noise
+      "occluder_path": "/path/to/occluder/dataset",
+      "background_path": "/path/to/background/dataset",
+      "blur_noise": "7",      # max gaussian blur kernel size
+      "h_noise": "0.07",      # max hue noise
+      "s_noise": "0.0",       # max saturation noise
+      "v_noise": "0.2"        # max intensity noise
     },
 
   "training_param":{
-      "file": "deeptracking/tracker/rgbd_tracker.lua",
+      "file": "path/to/network/lua/class.lua",
       "learning_rate": "0.005",
       "learning_rate_decay": "1e-5",
       "weight_decay": "0",
@@ -23,15 +22,17 @@
     },
 
   "logging":{
-      "path": "/tmp/deeptracking",
+      "path": "/path/to/log/output",
       "level": "DEBUG"
   },
 
-  "session_name": "test",
+  "session_name": "name",
   "train_path": "/path/to/train/dataset",
-  "valid_path": "/path/to/test/dataset",
-  "output_path": "/path/to/output",
-  "minibatch_size": "5",
-  "max_epoch": "20",
-  "early_stop_wait_limit" : "5"
+  "valid_path": "/path/to/validation/dataset",
+  "output_path": "/path/to/model/checkpoint",
+  "model_finetune": "",  # if path to valid model, will load it before training (for finetuning)
+  "minibatch_size": "128",
+  "max_epoch": "30",
+  "early_stop_wait_limit" : "5", # will stop training if validation is worst for x epochs
+  "gpu_device" : "1"
 }

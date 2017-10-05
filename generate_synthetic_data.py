@@ -2,9 +2,8 @@ from deeptracking.utils.argumentparser import ArgumentParser
 from deeptracking.utils.camera import Camera
 from deeptracking.utils.transform import Transform
 from deeptracking.data.dataset import Dataset
-from deeptracking.data.dataset_utils import combine_view_transform, show_frames, compute_2Dboundingbox
+from deeptracking.data.dataset_utils import combine_view_transform, show_frames, compute_2Dboundingbox, normalize_scale
 from deeptracking.data.modelrenderer import ModelRenderer, InitOpenGL
-from deeptracking.data.dataset_utils import normalize_scale
 from deeptracking.utils.uniform_sphere_sampler import UniformSphereSampler
 from tqdm import tqdm
 import sys

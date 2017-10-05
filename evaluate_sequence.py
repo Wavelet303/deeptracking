@@ -7,7 +7,7 @@ import os
 matplotlib.style.use('ggplot')
 
 if __name__ == '__main__':
-    path = "/home/mathieu/Dataset/DeepTrack/model/mixed_gardengnome/scores"
+    path = "/media/mathieu/e912e715-2be7-4fa2-8295-5c3ef1369dd0/models/schubert/outputs/deeptracking/models/dragon_squeeze/scores/occlusion_eval"
     files = [f for f in os.listdir(path) if f[-3:] == "csv"]
 
     figure_path = os.path.join(path, "figs")

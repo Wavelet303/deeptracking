@@ -78,9 +78,8 @@ class DeepTracker(TrackerBase):
         if debug_time:
             print("Render : {}".format(time.time() - start_time))
             start_time = time.time()
-        debug_info = (rgbA, bb2)
         rgbB, depthB = normalize_scale(current_rgb, current_depth, bb2, self.camera, self.image_size)
-        #cv2.imshow("testset", np.hstack((rgbA, rgbB)))
+        debug_info = (rgbA, bb2, np.hstack((rgbA, rgbB)))
 
         rgbA = rgbA.astype(np.float)
         rgbB = rgbB.astype(np.float)
